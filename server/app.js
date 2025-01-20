@@ -4,10 +4,11 @@ const path = require('path');
 const fs = require('fs');
 const tileRouter = require('./routes/tile'); // 타일 라우터
 const { generateTiles } = require('./utils/vips'); // 타일 생성 유틸리티
-
+const connectDB = require('./db');
 const app = express();
 const PORT = 3000;
 
+connectDB();
 // Configure file upload destination
 const upload = multer({ dest: 'uploads/' });
 
