@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVS Image Viewer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/openseadragon/2.4.2/openseadragon.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #f4f4f4;
+            height: 100vh;
+        }
+        #uploadForm {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        #uploadForm input[type="file"] {
+            margin: 10px 0;
+        }
+        #openseadragon {
+            width: 80%;
+            height: 60%;
+            border: 1px solid #ccc;
+            background: #000;
+        }
+        button {
+            padding: 10px 15px;
+            border: none;
+            background-color: #007bff;
+            color: #fff;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <!-- File Upload Form -->
+    <form id="uploadForm" enctype="multipart/form-data">
+        <h2>Upload an SVS File</h2>
+        <input type="file" name="svsFile" accept=".svs" required />
+        <br />
+        <button type="submit">Upload and Process</button>
+    </form>
+
+    <!-- OpenSeadragon Viewer -->
+    <div id="openseadragon"></div>
+
+    <script>
+        // Handle form submission
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault(); // Prevent the form from reloading the page
+
+            const formData = new FormData(e.target);
+
+            try {
+                // Upload the file to the server
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (response.ok) {
+                    const { tileSource } = await response.json();
+
+                    // Initialize OpenSeadragon with the tile source
+                    initializeViewer(tileSource);
+                } else {
+                    alert('File upload failed. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error uploading file:', error);
+                alert('An error occurred. Please try again.');
+            }
+        });
+
+        // Initialize OpenSeadragon viewer
+        function initializeViewer(tileSource) {
+            OpenSeadragon({
+                id: "openseadragon",
+                prefixUrl: "https://cdnjs.cloudflare.com/ajax/libs/openseadragon/2.4.2/images/",
+                tileSources: {
+                    height: 100000, // Example height, replace with actual height from server
+                    width: 100000,  // Example width, replace with actual width from server
+                    tileSize: 256,
+                    getTileUrl: (level, x, y) => `/tiles/${tileSource}/tile_${x}_${y}.jpg`,
+                },
+                showNavigator: true, // Enable mini-map
+            });
+        }
+    </script>
+</body>
+</html>
