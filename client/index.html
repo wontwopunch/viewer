@@ -5,30 +5,56 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SVS Image Viewer</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/openseadragon/2.4.2/openseadragon.min.js"></script>
+    <script>
+        async function checkAuth() {
+            const response = await fetch('/api/check-auth');
+            if (!response.ok) {
+                window.location.href = "/login.html"; // 로그인 안 되어 있으면 로그인 페이지로 이동
+            }
+        }
+        checkAuth(); // 페이지 로드 시 로그인 여부 확인
+    </script>
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
             display: flex;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+        #viewer-container {
+            flex: 2;
+            display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background-color: #f4f4f4;
-            height: 100vh;
-        }
-        #uploadForm {
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        #uploadForm input[type="file"] {
-            margin: 10px 0;
+            padding: 10px;
+            border-right: 1px solid #ccc;
         }
         #openseadragon {
-            width: 80%;
-            height: 60%;
+            width: 100%;
+            height: 80%;
             border: 1px solid #ccc;
             background: #000;
+        }
+        #memo-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            background: white;
+            overflow-y: auto;
+        }
+        .memo {
+            padding: 5px;
+            margin: 5px 0;
+            border-bottom: 1px solid #ddd;
+        }
+        textarea {
+            width: 100%;
+            height: 80px;
+            margin-top: 10px;
         }
         button {
             padding: 10px 15px;
@@ -44,59 +70,82 @@
     </style>
 </head>
 <body>
-    <!-- File Upload Form -->
-    <form id="uploadForm" enctype="multipart/form-data">
-        <h2>Upload an SVS File</h2>
-        <input type="file" name="svsFile" accept=".svs" required />
-        <br />
-        <button type="submit">Upload and Process</button>
-    </form>
+    <button onclick="location.href='/admin'">관리자 페이지로 이동</button>
+    
+    <!-- 뷰어 영역 -->
+    <div id="viewer-container">
+        <h2>SVS 파일 뷰어</h2>
+        <div id="openseadragon"></div>
+    </div>
 
-    <!-- OpenSeadragon Viewer -->
-    <div id="openseadragon"></div>
+    <!-- 메모 영역 -->
+    <div id="memo-container">
+        <h3>메모 작성</h3>
+        <div id="memo-list"></div>
+        <textarea id="memo-input" placeholder="메모를 입력하세요..."></textarea>
+        <button onclick="addMemo()">메모 추가</button>
+    </div>
 
     <script>
-        // Handle form submission
-        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
-            e.preventDefault(); // Prevent the form from reloading the page
+        const urlParams = new URLSearchParams(window.location.search);
+        const fileId = urlParams.get("file");
 
-            const formData = new FormData(e.target);
+        async function checkFileAccess() {
+            const response = await fetch(`/api/files/${fileId}`);
+            const file = await response.json();
 
-            try {
-                // Upload the file to the server
-                const response = await fetch('/upload', {
-                    method: 'POST',
-                    body: formData,
-                });
-
-                if (response.ok) {
-                    const { tileSource } = await response.json();
-
-                    // Initialize OpenSeadragon with the tile source
-                    initializeViewer(tileSource);
-                } else {
-                    alert('File upload failed. Please try again.');
-                }
-            } catch (error) {
-                console.error('Error uploading file:', error);
-                alert('An error occurred. Please try again.');
+            if (!file.public && !file.isAdmin) {
+                alert("이 파일은 비공개 상태입니다.");
+                window.location.href = "/login.html";
+            } else {
+                loadViewer(fileId);
+                fetchMemos();
             }
-        });
+        }
 
-        // Initialize OpenSeadragon viewer
-        function initializeViewer(tileSource) {
+        async function fetchMemos() {
+            const response = await fetch(`/api/memos/${fileId}`);
+            const memos = await response.json();
+            const memoList = document.getElementById("memo-list");
+            memoList.innerHTML = '';
+
+            memos.forEach(memo => {
+                const memoItem = document.createElement("div");
+                memoItem.classList.add("memo");
+                memoItem.innerText = memo.content;
+                memoList.appendChild(memoItem);
+            });
+        }
+
+        async function addMemo() {
+            const memoInput = document.getElementById("memo-input").value;
+            await fetch(`/api/memos/${fileId}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ content: memoInput })
+            });
+            document.getElementById("memo-input").value = "";
+            fetchMemos();
+        }
+
+        async function deleteFile(fileId) {
+            if (confirm("정말로 이 파일을 삭제하시겠습니까?")) {
+                await fetch(`/api/files/${fileId}`, { method: "DELETE" });
+                alert("파일이 삭제되었습니다.");
+                window.location.href = "/admin";
+            }
+        }
+
+        function loadViewer(fileId) {
             OpenSeadragon({
                 id: "openseadragon",
                 prefixUrl: "https://cdnjs.cloudflare.com/ajax/libs/openseadragon/2.4.2/images/",
-                tileSources: {
-                    height: 100000, // Example height, replace with actual height from server
-                    width: 100000,  // Example width, replace with actual width from server
-                    tileSize: 256,
-                    getTileUrl: (level, x, y) => `/tiles/${tileSource}/tile_${x}_${y}.jpg`,
-                },
-                showNavigator: true, // Enable mini-map
+                tileSources: `/tiles/${fileId}/info.json`,
+                showNavigator: true
             });
         }
+
+        checkFileAccess();
     </script>
 </body>
 </html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        h2 { margin-bottom: 10px; }
+        .file-list { margin-top: 20px; }
+        .file-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; border-bottom: 1px solid #ddd; }
+        button { padding: 5px 10px; margin-left: 10px; cursor: pointer; }
+        .public { color: green; font-weight: bold; }
+        .private { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h2>관리자 페이지</h2>
+    <button onclick="logout()">로그아웃</button>
+
+    <h3>SVS 파일 목록</h3>
+    <div class="file-list" id="file-list"></div>
+
+    <script>
+        async function fetchFiles() {
+            const response = await fetch('/api/files');
+            const files = await response.json();
+            const list = document.getElementById("file-list");
+            list.innerHTML = '';
+
+            files.forEach(file => {
+                const item = document.createElement("div");
+                item.classList.add("file-item");
+                let shareLink = file.public 
+                    ? `<a href="/viewer.html?file=${file.id}" target="_blank">뷰어로 보기</a>` 
+                    : "<span>비공개 상태</span>";
+                item.innerHTML = `
+                    <span>${file.name} - 상태: <span class="${file.public ? 'public' : 'private'}">${file.public ? "공개" : "비공개"}</span></span>
+                    ${shareLink}
+                    <button onclick="toggleVisibility('${file.id}')">${file.public ? "비공개로 전환" : "공개로 전환"}</button>
+                    <button onclick="deleteFile('${file.id}')">삭제</button>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        async function toggleVisibility(fileId) {
+            await fetch(`/api/files/${fileId}/toggle`, { method: 'POST' });
+            fetchFiles();
+        }
+
+        async function deleteFile(fileId) {
+            if (confirm("정말로 이 파일을 삭제하시겠습니까?")) {
+                await fetch(`/api/files/${fileId}`, { method: "DELETE" });
+                alert("파일이 삭제되었습니다.");
+                fetchFiles();
+            }
+        }
+
+        async function logout() {
+            await fetch('/api/logout', { method: 'POST' });
+            window.location.href = "/login.html";
+        }
+
+        fetchFiles();
+    </script>
+</body>
+</html>
