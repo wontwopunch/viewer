@@ -130,19 +130,38 @@
         const urlParams = new URLSearchParams(window.location.search);
         const fileId = urlParams.get("file");
 
-        async function checkFileAccess() {
-            const response = await fetch(`/api/files/${fileId}`);
-            const file = await response.json();
+        if (!fileId) {
+            console.warn("파일 ID가 없습니다. 기본 페이지로 이동합니다.");
+            window.location.href = "/login.html"; // 파일 ID가 없으면 로그인 페이지로 리디렉션
+        }
 
-            if (file.error === "비공개" && !file.isAdmin) {
-                alert("이 파일은 비공개 상태입니다.");
-                window.location.href = "/login.html";
+        async function checkFileAccess() {
+            if (!fileId) {
+                console.error("❌ 파일 ID가 존재하지 않습니다.");
                 return;
             }
 
-            loadViewer(fileId);
-            fetchMemos();
+            try {
+                const response = await fetch(`/api/files/${fileId}`);
+                if (!response.ok) {
+                    throw new Error("파일 정보를 가져오는 중 오류 발생");
+                }
+
+                const file = await response.json();
+
+                if (file.error === "비공개" && !file.isAdmin) {
+                    alert("이 파일은 비공개 상태입니다.");
+                    window.location.href = "/login.html";
+                    return;
+                }
+
+                loadViewer(fileId);
+                fetchMemos();
+            } catch (error) {
+                console.error("파일 정보를 불러오지 못했습니다:", error);
+            }
         }
+
 
         async function fetchMemos() {
             const response = await fetch(`/api/memos/${fileId}`);
@@ -198,16 +217,22 @@
 
             xhr.onload = function () {
                 if (xhr.status === 200) {
+                    const response = JSON.parse(xhr.responseText);
                     alert("파일 업로드 완료!");
                     progressContainer.style.display = "none";
-                    location.reload();
+                    window.location.href = `/index.html?file=${response.tileSource}`; // ✅ 업로드 완료 후 뷰어로 이동
                 } else {
-                    alert("업로드 실패");
+                    alert("업로드 실패. 서버 로그를 확인하세요.");
                 }
+            };
+
+            xhr.onerror = function () {
+                alert("네트워크 오류 발생.");
             };
 
             xhr.send(formData);
         }
+
 
         function loadViewer(fileId) {
             OpenSeadragon({

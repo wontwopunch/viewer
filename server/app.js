@@ -28,8 +28,6 @@ app.use(session({
 // JSON 요청 본문 처리
 app.use(express.json());
 
-// 파일 업로드 설정
-const upload = multer({ dest: 'uploads/' });
 
 // 정적 파일 제공 (로그인 페이지 및 뷰어 페이지)
 app.use(express.static(path.join(__dirname, '../client'), { index: false }));
@@ -62,27 +60,55 @@ app.get('/login', (req, res) => {
 });
 
 
+// 파일 업로드 설정
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        const uploadPath = path.join(__dirname, 'uploads/');
+        if (!fs.existsSync(uploadPath)) {
+            fs.mkdirSync(uploadPath, { recursive: true }); //업로드 디렉토리가 없으면 생성
+        }
+        cb(null, uploadPath);
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + path.extname(file.originalname)); // 원본 확장자 유지
+    }
+});
+
+const upload = multer({ storage: storage });
+
 // SVS 파일 업로드 엔드포인트
 app.post('/upload', requireAuth, upload.single('svsFile'), async (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ error: "파일이 선택되지 않았습니다." }); // 파일이 없을 경우 에러 반환
+    }
+
     try {
-        const filePath = path.join(__dirname, req.file.path); // 업로드된 파일 경로
+        const filePath = req.file.path; // 업로드된 파일의 경로
         const outputDir = path.join(__dirname, 'tiles', req.file.filename); // 타일 저장 디렉토리
 
-        // 타일 저장 디렉토리가 없으면 생성
         if (!fs.existsSync(outputDir)) {
-            fs.mkdirSync(outputDir, { recursive: true });
+            fs.mkdirSync(outputDir, { recursive: true }); // 타일 저장 디렉토리가 없으면 생성
         }
 
         // 타일 생성 실행
         await generateTiles(filePath, outputDir);
 
-        // 타일 소스 정보 반환
-        res.json({ tileSource: req.file.filename });
+        console.log(`✅ 파일 업로드 완료: ${filePath}`);
+        console.log(`✅ 타일 저장 디렉토리: ${outputDir}`);
+
+        // ✅ 업로드 성공 응답
+        res.json({
+            message: "파일 업로드 성공",
+            fileName: req.file.filename,
+            filePath: filePath,
+            tileSource: req.file.filename
+        });
     } catch (error) {
-        console.error('파일 처리 오류:', error);
-        res.status(500).send('파일 처리 중 오류가 발생했습니다.');
+        console.error('❌ 파일 처리 오류:', error);
+        res.status(500).json({ error: "파일 처리 중 오류가 발생했습니다." });
     }
 });
+
 
 // 서버 실행
 app.listen(PORT, () => {
