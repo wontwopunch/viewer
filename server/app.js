@@ -20,9 +20,19 @@ connectDB();
 app.use(session({
     secret: 'svs_viewer_secret',
     resave: false,
-    saveUninitialized: true,
-    cookie: { secure: false } // HTTPS 환경에서는 true로 설정
+    saveUninitialized: false, // ✅ 불필요한 빈 세션 방지
+    cookie: {
+        secure: false,  // HTTPS 사용 시 true로 변경
+        httpOnly: true, // JS에서 쿠키 접근 방지 (보안)
+        maxAge: 1000 * 60 * 60 // 1시간 유지
+    }
 }));
+
+// ✅ 로그인 상태를 확인하는 미들웨어 추가
+app.use((req, res, next) => {
+    console.log("현재 로그인 상태:", req.session.user);
+    next();
+});
 
 
 // JSON 요청 본문 처리
