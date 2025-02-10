@@ -218,13 +218,9 @@
                     const response = JSON.parse(xhr.responseText);
 
                     if (xhr.status === 200) {
-                        if (response.tileSource) {
-                            alert("파일 업로드 완료!");
-                            progressContainer.style.display = "none";
-                            window.location.href = `/index.html?file=${response.tileSource}`;
-                        } else {
-                            alert("🚨 오류: 서버에서 정상적인 응답을 받지 못했습니다.");
-                        }
+                        alert("파일 업로드 완료!");
+                        progressContainer.style.display = "none";
+                        window.location.href = `/index.html?file=${response.tileSource}`;
                     } else {
                         console.error("서버 오류:", response);
                         alert(`⚠️ 업로드 실패: ${response.error || "서버 오류 발생"}`);
@@ -242,7 +238,6 @@
             xhr.send(formData);
         }
 
-        
         function loadViewer(fileId) {
             OpenSeadragon({
                 id: "openseadragon",
