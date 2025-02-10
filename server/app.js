@@ -4,6 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const cors = require('cors');
+const sharp = require('sharp');
 
 const tileRouter = require('./routes/tile'); 
 const authRouter = require('./routes/auth'); 
