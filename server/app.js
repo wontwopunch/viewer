@@ -8,7 +8,7 @@ const cors = require('cors');
 const tileRouter = require('./routes/tile'); 
 const authRouter = require('./routes/auth'); 
 const fileRouter = require('./routes/files');
-const { generateTiles } = require('./utils/vips'); 
+const { generateTiles } = require('./utils/vips');
 const connectDB = require('./db.js');
 
 const app = express();
@@ -30,7 +30,11 @@ app.use(express.json());
 // 파일 업로드 설정 (🚀 파일명 유지)
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, 'uploads/');
+        const uploadPath = path.join(__dirname, '../uploads/');
+        if (!fs.existsSync(uploadPath)) {
+            fs.mkdirSync(uploadPath, { recursive: true });
+        }
+        cb(null, uploadPath);
     },
     filename: function (req, file, cb) {
         cb(null, Date.now() + path.extname(file.originalname)); 
@@ -74,6 +78,7 @@ app.get('/login', (req, res) => {
 app.get('/admin', requireAuth, (req, res) => {
     res.sendFile(path.join(__dirname, '../client', 'admin.html'));
 });
+
 
 // 🚀 파일 업로드 엔드포인트 (진행률 표시)
 app.post('/upload', requireAuth, upload.single('svsFile'), async (req, res) => {
