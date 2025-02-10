@@ -94,14 +94,16 @@
             const response = await fetch(`/api/files/${fileId}`);
             const file = await response.json();
 
-            if (!file.public && !file.isAdmin) {
+            if (file.error === "비공개" && !file.isAdmin) {
                 alert("이 파일은 비공개 상태입니다.");
                 window.location.href = "/login.html";
-            } else {
-                loadViewer(fileId);
-                fetchMemos();
+                return;
             }
+
+            loadViewer(fileId);
+            fetchMemos();
         }
+
 
         async function fetchMemos() {
             const response = await fetch(`/api/memos/${fileId}`);

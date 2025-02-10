@@ -26,10 +26,12 @@ router.get('/:id', async (req, res) => {
     if (!file) {
         return res.status(404).json({ error: "파일을 찾을 수 없습니다." });
     }
+
     if (!file.public && req.session.user !== "admin") {
-        return res.status(403).json({ error: "비공개 파일에는 접근할 수 없습니다." });
+        return res.json({ error: "비공개", isAdmin: false });
     }
-    res.json({ name: file.name, public: file.public });
+
+    res.json({ name: file.name, public: file.public, isAdmin: req.session.user === "admin" });
 });
 
 // 파일 공개/비공개 전환 API
