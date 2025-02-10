@@ -96,21 +96,21 @@
         async function handleLogin() {
             const username = document.getElementById("username").value;
             const password = document.getElementById("password").value;
-
+    
             const response = await fetch('/api/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password })
             });
-
+    
             if (response.ok) {
-                window.location.href = "/index.html"; // ✅ index.html로 이동하도록 변경
+                const result = await response.json();
+                window.location.href = result.redirect; // 🚀 `index.html`로 이동
             } else {
                 document.getElementById("error-message").style.display = "block";
             }
         }
-
-
     </script>
+    
 </body>
 </html>
