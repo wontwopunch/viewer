@@ -80,9 +80,10 @@ app.get('/admin', requireAuth, (req, res) => {
 });
 
 
-// 🚀 파일 업로드 엔드포인트 (진행률 표시)
+// 🔹 파일 업로드 엔드포인트 (에러 디버깅 추가)
 app.post('/upload', requireAuth, upload.single('svsFile'), async (req, res) => {
     if (!req.file) {
+        console.error("❌ 업로드된 파일 없음");
         return res.status(400).json({ error: "파일이 선택되지 않았습니다." });
     }
 
@@ -90,17 +91,27 @@ app.post('/upload', requireAuth, upload.single('svsFile'), async (req, res) => {
         const filePath = path.join(__dirname, '../uploads', req.file.filename);
         const outputDir = path.join(__dirname, '../tiles', req.file.filename);
 
+        console.log(`📂 업로드된 파일 경로: ${filePath}`);
+        console.log(`🛠 타일 생성 경로: ${outputDir}`);
+
+        // 디렉토리 존재 확인 및 생성
         if (!fs.existsSync(outputDir)) {
             fs.mkdirSync(outputDir, { recursive: true });
         }
 
+        // 타일 생성 실행
+        console.log("🔄 타일 생성 시작...");
         await generateTiles(filePath, outputDir);
+        console.log("✅ 타일 생성 완료!");
+
         res.json({ tileSource: req.file.filename });
+
     } catch (error) {
-        console.error('파일 처리 오류:', error);
-        res.status(500).json({ error: '파일 처리 중 오류가 발생했습니다.' });
+        console.error("❌ 파일 처리 중 오류 발생:", error);
+        res.status(500).json({ error: '파일 처리 중 오류가 발생했습니다.', details: error.message });
     }
 });
+
 
 // 🚀 서버 실행
 app.listen(PORT, () => {
