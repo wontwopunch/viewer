@@ -32,7 +32,7 @@ app.use(express.json());
 const upload = multer({ dest: 'uploads/' });
 
 // 정적 파일 제공 (로그인 페이지 및 뷰어 페이지)
-app.use(express.static(path.join(__dirname, '../client')));
+app.use(express.static(path.join(__dirname, '../client'), { index: false }));
 
 
 // 라우터 연결
@@ -50,7 +50,7 @@ function requireAuth(req, res, next) {
 }
 
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../client', 'login.html'));
+    res.sendFile(path.resolve(__dirname, '../client/login.html'));
 });
 
 app.get('/admin', (req, res) => {
