@@ -19,21 +19,21 @@ async function generateTiles(inputPath, outputDir, tileSize = 256) {
             throw new Error(`❌ 입력 파일이 존재하지 않습니다: ${inputPath}`);
         }
 
-        let resized = false;
-        let image = sharp(inputPath).limitInputPixels(false); // 🚀 픽셀 제한 해제
-
+        // 🚀 먼저 이미지 크기를 확인하고 강제 리사이징 진행
+        console.log("📏 이미지 크기 확인 중...");
+        let image = sharp(inputPath).limitInputPixels(false); // ✅ 픽셀 제한 해제
         let metadata;
+
         try {
             metadata = await image.metadata();
         } catch (error) {
-            console.log("⚠️ 메타데이터 분석 실패. 자동 리사이징 시도...");
+            console.log("⚠️ 메타데이터 분석 실패. 강제 리사이징 시도...");
 
-            // 🚀 자동 리사이징 (강제 축소)
             const resizedPath = inputPath.replace('.svs', '_resized.svs');
 
             await sharp(inputPath)
                 .resize({
-                    width: 10000, // 최대 10,000px 제한
+                    width: 10000, // 🚀 최대 10,000px로 자동 리사이징
                     height: 10000,
                     fit: 'inside'
                 })
@@ -41,19 +41,18 @@ async function generateTiles(inputPath, outputDir, tileSize = 256) {
 
             console.log(`📉 리사이징 완료: ${resizedPath}`);
             inputPath = resizedPath; // ✅ 리사이징된 파일을 사용
-            resized = true;
-            image = sharp(resizedPath).limitInputPixels(false);
+            image = sharp(resizedPath).limitInputPixels(false); // 다시 sharp 객체 생성
             metadata = await image.metadata();
         }
 
         console.log(`🖼 원본 이미지 크기: ${metadata.width} x ${metadata.height}`);
 
-        // 🚀 리사이징이 적용되지 않았을 경우 강제 리사이징
-        if (!resized && metadata.width * metadata.height > 100000000) {  
-            console.log("⚠️ 이미지 크기가 너무 큽니다. 다시 자동 리사이징 적용...");
+        // 🚀 1억 픽셀 이상이면 강제 리사이징
+        if (metadata.width * metadata.height > 100000000) {  
+            console.log("⚠️ 이미지 크기가 너무 큽니다. 강제 리사이징 적용...");
             const resizedPath = inputPath.replace('.svs', '_resized2.svs');
 
-            await image
+            await sharp(inputPath)
                 .resize({ width: 10000, height: 10000, fit: 'inside' })
                 .toFile(resizedPath);
 
