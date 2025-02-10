@@ -23,6 +23,7 @@
             height: 100vh;
             background-color: #f4f4f4;
         }
+
         #viewer-container {
             flex: 2;
             display: flex;
@@ -32,50 +33,89 @@
             padding: 10px;
             border-right: 1px solid #ccc;
         }
+
         #openseadragon {
             width: 100%;
             height: 80%;
             border: 1px solid #ccc;
             background: #000;
         }
+
         #memo-container {
-            flex: 1;
+            flex: 0.8; /* ✅ 크기 줄이기 */
             display: flex;
             flex-direction: column;
             padding: 10px;
             background: white;
             overflow-y: auto;
+            border-left: 1px solid #ddd;
         }
+
         .memo {
             padding: 5px;
             margin: 5px 0;
             border-bottom: 1px solid #ddd;
         }
+
         textarea {
             width: 100%;
-            height: 80px;
-            margin-top: 10px;
+            height: 50px; /* ✅ 높이 줄이기 */
+            margin-top: 5px;
         }
+
         button {
-            padding: 10px 15px;
+            padding: 8px 12px;
             border: none;
             background-color: #007bff;
             color: #fff;
             cursor: pointer;
             border-radius: 4px;
+            font-size: 14px;
         }
+
         button:hover {
             background-color: #0056b3;
+        }
+
+        /* ✅ 관리자 페이지 버튼 스타일 */
+        .admin-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 6px 10px;
+            font-size: 14px;
+            background-color: #28a745;
+        }
+
+        /* ✅ 파일 업로드 스타일 */
+        .upload-container {
+            margin-top: 10px;
+        }
+
+        #progress-container {
+            margin-top: 5px;
+            display: none;
         }
     </style>
 </head>
 <body>
-    <button onclick="location.href='/admin'">관리자 페이지로 이동</button>
-    
+    <!-- ✅ 관리자 페이지 버튼 (작게 & 상단에 배치) -->
+    <button class="admin-btn" onclick="location.href='/admin'">관리자 페이지</button>
+
     <!-- 뷰어 영역 -->
     <div id="viewer-container">
         <h2>SVS 파일 뷰어</h2>
         <div id="openseadragon"></div>
+
+        <!-- ✅ 파일 업로드 추가 -->
+        <div class="upload-container">
+            <input type="file" id="fileInput" accept=".svs">
+            <button onclick="uploadFile()">파일 업로드</button>
+            <div id="progress-container">
+                <span id="progress-text">0%</span>
+                <progress id="progress-bar" value="0" max="100"></progress>
+            </div>
+        </div>
     </div>
 
     <!-- 메모 영역 -->
@@ -104,7 +144,6 @@
             fetchMemos();
         }
 
-
         async function fetchMemos() {
             const response = await fetch(`/api/memos/${fileId}`);
             const memos = await response.json();
@@ -130,12 +169,44 @@
             fetchMemos();
         }
 
-        async function deleteFile(fileId) {
-            if (confirm("정말로 이 파일을 삭제하시겠습니까?")) {
-                await fetch(`/api/files/${fileId}`, { method: "DELETE" });
-                alert("파일이 삭제되었습니다.");
-                window.location.href = "/admin";
+        async function uploadFile() {
+            const fileInput = document.getElementById("fileInput").files[0];
+            if (!fileInput) {
+                alert("파일을 선택하세요.");
+                return;
             }
+
+            const formData = new FormData();
+            formData.append("svsFile", fileInput);
+
+            const progressContainer = document.getElementById("progress-container");
+            const progressBar = document.getElementById("progress-bar");
+            const progressText = document.getElementById("progress-text");
+
+            progressContainer.style.display = "block";
+
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", "/upload", true);
+
+            xhr.upload.onprogress = function (event) {
+                if (event.lengthComputable) {
+                    let percentComplete = Math.round((event.loaded / event.total) * 100);
+                    progressBar.value = percentComplete;
+                    progressText.innerText = percentComplete + "%";
+                }
+            };
+
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    alert("파일 업로드 완료!");
+                    progressContainer.style.display = "none";
+                    location.reload();
+                } else {
+                    alert("업로드 실패");
+                }
+            };
+
+            xhr.send(formData);
         }
 
         function loadViewer(fileId) {
