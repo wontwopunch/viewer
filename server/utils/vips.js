@@ -19,14 +19,15 @@ async function generateTiles(inputPath, outputDir, tileSize = 256) {
             throw new Error(`❌ 입력 파일이 존재하지 않습니다: ${inputPath}`);
         }
 
+        let resized = false;
         let image = sharp(inputPath).limitInputPixels(false); // 🚀 픽셀 제한 해제
-        let metadata;
 
+        let metadata;
         try {
             metadata = await image.metadata();
         } catch (error) {
             console.log("⚠️ 메타데이터 분석 실패. 자동 리사이징 시도...");
-            
+
             // 🚀 자동 리사이징 (강제 축소)
             const resizedPath = inputPath.replace('.svs', '_resized.svs');
 
@@ -40,11 +41,27 @@ async function generateTiles(inputPath, outputDir, tileSize = 256) {
 
             console.log(`📉 리사이징 완료: ${resizedPath}`);
             inputPath = resizedPath; // ✅ 리사이징된 파일을 사용
-            image = sharp(resizedPath);
+            resized = true;
+            image = sharp(resizedPath).limitInputPixels(false);
             metadata = await image.metadata();
         }
 
         console.log(`🖼 원본 이미지 크기: ${metadata.width} x ${metadata.height}`);
+
+        // 🚀 리사이징이 적용되지 않았을 경우 강제 리사이징
+        if (!resized && metadata.width * metadata.height > 100000000) {  
+            console.log("⚠️ 이미지 크기가 너무 큽니다. 다시 자동 리사이징 적용...");
+            const resizedPath = inputPath.replace('.svs', '_resized2.svs');
+
+            await image
+                .resize({ width: 10000, height: 10000, fit: 'inside' })
+                .toFile(resizedPath);
+
+            console.log(`📉 강제 리사이징 완료: ${resizedPath}`);
+            inputPath = resizedPath;
+            image = sharp(resizedPath).limitInputPixels(false);
+            metadata = await image.metadata();
+        }
 
         // 출력 디렉토리 생성
         if (!fs.existsSync(outputDir)) {
@@ -60,7 +77,7 @@ async function generateTiles(inputPath, outputDir, tileSize = 256) {
 
                 console.log(`🖼 타일 생성: ${tilePath}`);
 
-                await image
+                await sharp(inputPath)
                     .extract({ left: x, top: y, width: tileWidth, height: tileHeight })
                     .toFile(tilePath);
             }
