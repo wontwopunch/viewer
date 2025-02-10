@@ -19,21 +19,28 @@ async function generateTiles(inputPath, outputDir, tileSize = 256) {
             throw new Error(`❌ 입력 파일이 존재하지 않습니다: ${inputPath}`);
         }
 
-        const image = sharp(inputPath);
+        let image = sharp(inputPath).limitInputPixels(false); // 🚀 픽셀 제한 해제
         const metadata = await image.metadata();
         console.log(`🖼 원본 이미지 크기: ${metadata.width} x ${metadata.height}`);
 
-        // 🚀 픽셀 제한 해제 (1억 픽셀 이상일 경우 자동 리사이징)
-        if (metadata.width * metadata.height > 100000000) {  
+        // 🚀 초대형 이미지 자동 리사이징 (1억 픽셀 초과 시)
+        const maxPixels = 100000000; // 1억 픽셀
+        if (metadata.width * metadata.height > maxPixels) {
             console.log("⚠️ 이미지 크기가 너무 큽니다. 자동 리사이징 적용...");
-            const resizedPath = inputPath.replace('.svs', '_resized.svs');
-            
+
+            const parsedPath = path.parse(inputPath);
+            const resizedPath = path.join(parsedPath.dir, `${parsedPath.name}_resized${parsedPath.ext}`);
+
+            const resizeWidth = Math.min(metadata.width, 10000);
+            const resizeHeight = Math.min(metadata.height, 10000);
+
             await image
-                .resize({ width: 10000, height: 10000, fit: 'inside' }) // 자동 크기 조정
+                .resize({ width: resizeWidth, height: resizeHeight, fit: 'inside' })
                 .toFile(resizedPath);
-            
+
             console.log(`📉 리사이징 완료: ${resizedPath}`);
             inputPath = resizedPath;
+            image = sharp(inputPath); // 리사이징된 이미지 다시 로드
         }
 
         // 출력 디렉토리 생성
@@ -50,7 +57,7 @@ async function generateTiles(inputPath, outputDir, tileSize = 256) {
 
                 console.log(`🖼 타일 생성: ${tilePath}`);
 
-                await sharp(inputPath)
+                await image
                     .extract({ left: x, top: y, width: tileWidth, height: tileHeight })
                     .toFile(tilePath);
             }
