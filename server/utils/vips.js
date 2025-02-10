@@ -2,7 +2,7 @@ const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
 
-// 🚀 sharp 캐시 비활성화 및 픽셀 제한 해제
+// 🚀 sharp 캐시 비활성화 (메모리 최적화)
 sharp.cache(false);
 
 /**
@@ -19,23 +19,26 @@ async function generateTiles(inputPath, outputDir, tileSize = 256) {
             throw new Error(`❌ 입력 파일이 존재하지 않습니다: ${inputPath}`);
         }
 
-        // 🚀 Sharp 라이브러리로 이미지 메타데이터 가져오기
-        const image = sharp(inputPath).limitInputPixels(false);
+        const image = sharp(inputPath);
         const metadata = await image.metadata();
         console.log(`🖼 원본 이미지 크기: ${metadata.width} x ${metadata.height}`);
 
-        // 🚀 1억 픽셀 이상일 경우 자동 리사이징 (최대 10,000px로 조정)
-        let finalInputPath = inputPath;
+        // 🚀 픽셀 제한 해제 (1억 픽셀 이상일 경우 자동 리사이징)
+        let finalFilePath = inputPath;
         if (metadata.width * metadata.height > 100000000) {  
             console.log("⚠️ 이미지 크기가 너무 큽니다. 자동 리사이징 적용...");
             const resizedPath = inputPath.replace('.svs', '_resized.svs');
-            
+
             await image
-                .resize({ width: 10000, height: 10000, fit: 'inside' }) // 자동 크기 조정
+                .resize({
+                    width: Math.min(10000, metadata.width),
+                    height: Math.min(10000, metadata.height),
+                    fit: 'inside'
+                })
                 .toFile(resizedPath);
-            
+
             console.log(`📉 리사이징 완료: ${resizedPath}`);
-            finalInputPath = resizedPath;
+            finalFilePath = resizedPath;
         }
 
         // 출력 디렉토리 생성
@@ -52,7 +55,7 @@ async function generateTiles(inputPath, outputDir, tileSize = 256) {
 
                 console.log(`🖼 타일 생성: ${tilePath}`);
 
-                await sharp(finalInputPath)
+                await sharp(finalFilePath)
                     .extract({ left: x, top: y, width: tileWidth, height: tileHeight })
                     .toFile(tilePath);
             }
