@@ -2,8 +2,8 @@ const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
 
-// 🚀 sharp의 최대 픽셀 제한 해제
-sharp.cache({ limits: { pixel: false } });
+// 🚀 Sharp의 최대 픽셀 제한 해제 (최신 버전에서 변경 가능)
+sharp.cache(false);
 
 /**
  * 이미지 파일을 타일로 변환
@@ -21,17 +21,10 @@ async function generateTiles(inputPath, outputDir, tileSize = 256) {
 
         console.log(`🖼 원본 이미지 크기: ${metadata.width}x${metadata.height}`);
 
-        // 🚀 해상도가 너무 크다면 리사이징 적용
-        const MAX_WIDTH = 10000;
-        const MAX_HEIGHT = 10000;
-
-        if (metadata.width > MAX_WIDTH || metadata.height > MAX_HEIGHT) {
+        // 🚀 픽셀 제한 해제 (Sharp 최신 버전과 호환)
+        if (metadata.width * metadata.height > 100000000) {  // 1억 픽셀 초과 시 리사이징
             console.log("⚠️ 이미지 크기가 너무 큽니다. 자동 리사이징 적용...");
-            await image.resize({
-                width: Math.min(metadata.width, MAX_WIDTH),
-                height: Math.min(metadata.height, MAX_HEIGHT),
-                fit: 'inside'
-            }).toBuffer();
+            await image.resize({ width: 10000, height: 10000, fit: 'inside' }).toBuffer();
         }
 
         if (!fs.existsSync(outputDir)) {
