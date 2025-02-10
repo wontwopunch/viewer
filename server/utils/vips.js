@@ -23,11 +23,17 @@ async function generateTiles(inputPath, outputDir, tileSize = 256) {
         const metadata = await image.metadata();
         console.log(`🖼 원본 이미지 크기: ${metadata.width} x ${metadata.height}`);
 
-        // 🚀 너무 큰 이미지 자동 리사이징
-        let processedImage = image;
-        if (metadata.width * metadata.height > 100000000) {  // 1억 픽셀 초과 시 리사이징
+        // 🚀 픽셀 제한 해제 (1억 픽셀 이상일 경우 자동 리사이징)
+        if (metadata.width * metadata.height > 100000000) {  
             console.log("⚠️ 이미지 크기가 너무 큽니다. 자동 리사이징 적용...");
-            processedImage = image.resize({ width: 10000, height: 10000, fit: 'inside' });
+            const resizedPath = inputPath.replace('.svs', '_resized.svs');
+            
+            await image
+                .resize({ width: 10000, height: 10000, fit: 'inside' }) // 자동 크기 조정
+                .toFile(resizedPath);
+            
+            console.log(`📉 리사이징 완료: ${resizedPath}`);
+            inputPath = resizedPath;
         }
 
         // 출력 디렉토리 생성
@@ -44,7 +50,7 @@ async function generateTiles(inputPath, outputDir, tileSize = 256) {
 
                 console.log(`🖼 타일 생성: ${tilePath}`);
 
-                await processedImage
+                await sharp(inputPath)
                     .extract({ left: x, top: y, width: tileWidth, height: tileHeight })
                     .toFile(tilePath);
             }
