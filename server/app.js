@@ -87,32 +87,32 @@ app.post('/upload', requireAuth, upload.single('svsFile'), async (req, res) => {
     }
 
     try {
-        const filePath = path.join(UPLOAD_DIR, req.file.filename);
-        const resizedPath = filePath.replace('.svs', '_resized.svs');
-        const outputDir = path.join(TILE_DIR, req.file.filename);
+        const filePath = path.join(__dirname, '../uploads', req.file.filename);
+        const outputDir = path.join(__dirname, '../tiles', req.file.filename);
+
+        if (!fs.existsSync(outputDir)) {
+            fs.mkdirSync(outputDir, { recursive: true });
+        }
 
         console.log(`🔹 업로드된 파일: ${filePath}`);
 
-        // 🚀 이미지 크기 확인
-        const image = sharp(filePath);
+        // 🚀 Sharp에서 픽셀 제한 해제 적용
+        sharp.cache(false);
+        const image = sharp(filePath).limitInputPixels(false);
+
         const metadata = await image.metadata();
         console.log(`🖼 업로드된 이미지 크기: ${metadata.width}x${metadata.height}`);
 
-        // 🚀 1억 픽셀 초과 시 자동 리사이징
+        // 🚀 1억 픽셀 이상일 경우 자동 리사이징 (가로 10,000px 이하로 조정)
         if (metadata.width * metadata.height > 100000000) {
             console.log("⚠️ 이미지 크기가 너무 큽니다. 리사이징 적용...");
-            await image
-                .resize({ width: 10000, height: 10000, fit: 'inside' })
-                .toFile(resizedPath);
+            const resizedPath = filePath.replace('.svs', '_resized.svs');
+            await image.resize({ width: 10000, height: 10000, fit: 'inside' }).toFile(resizedPath);
             console.log(`📉 리사이징 완료: ${resizedPath}`);
-        } else {
-            // 1억 픽셀 이하라면 원본 사용
-            fs.renameSync(filePath, resizedPath);
         }
 
         // 🚀 타일 생성 실행
-        await generateTiles(resizedPath, outputDir);
-
+        await generateTiles(filePath, outputDir);
         res.json({ tileSource: req.file.filename });
 
     } catch (error) {

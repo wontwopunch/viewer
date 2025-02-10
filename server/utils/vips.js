@@ -2,7 +2,7 @@ const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
 
-// 🚀 sharp 캐시 비활성화 (메모리 최적화)
+// 🚀 sharp 캐시 비활성화 및 픽셀 제한 해제
 sharp.cache(false);
 
 /**
@@ -19,47 +19,23 @@ async function generateTiles(inputPath, outputDir, tileSize = 256) {
             throw new Error(`❌ 입력 파일이 존재하지 않습니다: ${inputPath}`);
         }
 
-        // 🚀 먼저 이미지 크기를 확인하고 강제 리사이징 진행
-        console.log("📏 이미지 크기 확인 중...");
-        let image = sharp(inputPath).limitInputPixels(false); // ✅ 픽셀 제한 해제
-        let metadata;
-
-        try {
-            metadata = await image.metadata();
-        } catch (error) {
-            console.log("⚠️ 메타데이터 분석 실패. 강제 리사이징 시도...");
-
-            const resizedPath = inputPath.replace('.svs', '_resized.svs');
-
-            await sharp(inputPath)
-                .resize({
-                    width: 10000, // 🚀 최대 10,000px로 자동 리사이징
-                    height: 10000,
-                    fit: 'inside'
-                })
-                .toFile(resizedPath);
-
-            console.log(`📉 리사이징 완료: ${resizedPath}`);
-            inputPath = resizedPath; // ✅ 리사이징된 파일을 사용
-            image = sharp(resizedPath).limitInputPixels(false); // 다시 sharp 객체 생성
-            metadata = await image.metadata();
-        }
-
+        // 🚀 Sharp 라이브러리로 이미지 메타데이터 가져오기
+        const image = sharp(inputPath).limitInputPixels(false);
+        const metadata = await image.metadata();
         console.log(`🖼 원본 이미지 크기: ${metadata.width} x ${metadata.height}`);
 
-        // 🚀 1억 픽셀 이상이면 강제 리사이징
+        // 🚀 1억 픽셀 이상일 경우 자동 리사이징 (최대 10,000px로 조정)
+        let finalInputPath = inputPath;
         if (metadata.width * metadata.height > 100000000) {  
-            console.log("⚠️ 이미지 크기가 너무 큽니다. 강제 리사이징 적용...");
-            const resizedPath = inputPath.replace('.svs', '_resized2.svs');
-
-            await sharp(inputPath)
-                .resize({ width: 10000, height: 10000, fit: 'inside' })
+            console.log("⚠️ 이미지 크기가 너무 큽니다. 자동 리사이징 적용...");
+            const resizedPath = inputPath.replace('.svs', '_resized.svs');
+            
+            await image
+                .resize({ width: 10000, height: 10000, fit: 'inside' }) // 자동 크기 조정
                 .toFile(resizedPath);
-
-            console.log(`📉 강제 리사이징 완료: ${resizedPath}`);
-            inputPath = resizedPath;
-            image = sharp(resizedPath).limitInputPixels(false);
-            metadata = await image.metadata();
+            
+            console.log(`📉 리사이징 완료: ${resizedPath}`);
+            finalInputPath = resizedPath;
         }
 
         // 출력 디렉토리 생성
@@ -76,7 +52,7 @@ async function generateTiles(inputPath, outputDir, tileSize = 256) {
 
                 console.log(`🖼 타일 생성: ${tilePath}`);
 
-                await sharp(inputPath)
+                await sharp(finalInputPath)
                     .extract({ left: x, top: y, width: tileWidth, height: tileHeight })
                     .toFile(tilePath);
             }
