@@ -23,24 +23,25 @@ async function generateTiles(inputPath, outputDir, tileSize = 256) {
         let metadata = await image.metadata();
         console.log(`🖼 원본 이미지 크기: ${metadata.width} x ${metadata.height}`);
 
-        // 🚀 픽셀 제한 해제 (1억 픽셀 이상일 경우 자동 리사이징)
+        // 🚀 픽셀 제한 해제 (100MP 이상일 경우 자동 리사이징)
         const MAX_PIXELS = 100000000; // 1억 픽셀 (100MP)
         if (metadata.width * metadata.height > MAX_PIXELS) {
             console.log("⚠️ 이미지 크기가 너무 큽니다. 자동 리사이징 적용...");
 
             const resizedPath = inputPath.replace('.svs', '_resized.svs');
 
-            await image
+            await sharp(inputPath)
                 .resize({
-                    width: Math.min(metadata.width, 10000),
+                    width: Math.min(metadata.width, 10000),  // 최대 10,000px 제한
                     height: Math.min(metadata.height, 10000),
                     fit: 'inside'
                 })
                 .toFile(resizedPath);
 
             console.log(`📉 리사이징 완료: ${resizedPath}`);
+            inputPath = resizedPath; // ✅ 리사이징된 파일을 타일 생성에 사용
             image = sharp(resizedPath);
-            metadata = await image.metadata();
+            metadata = await image.metadata(); // 메타데이터 갱신
         }
 
         // 출력 디렉토리 생성
