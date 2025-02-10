@@ -2,7 +2,7 @@ const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
 
-// 🚀 sharp의 최대 픽셀 한도를 늘려서 해결
+// 🚀 sharp의 최대 픽셀 제한 해제
 sharp.cache({ limits: { pixel: false } });
 
 /**
@@ -17,9 +17,22 @@ async function generateTiles(inputPath, outputDir, tileSize = 256) {
         }
 
         const image = sharp(inputPath);
-
         const metadata = await image.metadata();
-        console.log(`🖼 이미지 크기: ${metadata.width}x${metadata.height}`);
+
+        console.log(`🖼 원본 이미지 크기: ${metadata.width}x${metadata.height}`);
+
+        // 🚀 해상도가 너무 크다면 리사이징 적용
+        const MAX_WIDTH = 10000;
+        const MAX_HEIGHT = 10000;
+
+        if (metadata.width > MAX_WIDTH || metadata.height > MAX_HEIGHT) {
+            console.log("⚠️ 이미지 크기가 너무 큽니다. 자동 리사이징 적용...");
+            await image.resize({
+                width: Math.min(metadata.width, MAX_WIDTH),
+                height: Math.min(metadata.height, MAX_HEIGHT),
+                fit: 'inside'
+            }).toBuffer();
+        }
 
         if (!fs.existsSync(outputDir)) {
             fs.mkdirSync(outputDir, { recursive: true });
