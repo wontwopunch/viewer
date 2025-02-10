@@ -7,11 +7,20 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/openseadragon/2.4.2/openseadragon.min.js"></script>
     <script>
         async function checkAuth() {
-            const response = await fetch('/api/check-auth');
-            if (!response.ok) {
-                window.location.href = "/login.html"; // 로그인 안 되어 있으면 로그인 페이지로 이동
+            try {
+                const response = await fetch('/api/check-auth');
+                const result = await response.json();
+
+                if (!result.authenticated) {
+                    console.warn("🔴 인증되지 않음, 로그인 페이지로 이동");
+                    window.location.href = "/login.html";
+                }
+            } catch (error) {
+                console.error("❌ 인증 상태 확인 중 오류 발생:", error);
+                window.location.href = "/login.html";
             }
         }
+
         checkAuth(); // 페이지 로드 시 로그인 여부 확인
     </script>
     <style>
