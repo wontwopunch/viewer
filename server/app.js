@@ -9,7 +9,7 @@ const sharp = require('sharp');
 const tileRouter = require('./routes/tile'); 
 const authRouter = require('./routes/auth'); 
 const fileRouter = require('./routes/files');
-const { generateTiles } = require('./utils/vips');
+const { generateTiles } = require('./utils/imageProcessor');
 const connectDB = require('./db.js');
 
 const app = express();
@@ -38,7 +38,7 @@ const storage = multer.diskStorage({
         cb(null, uploadPath);
     },
     filename: function (req, file, cb) {
-        cb(null, Date.now() + path.extname(file.originalname)); 
+        cb(null, Date.now() + path.extname(file.originalname));
     }
 });
 const upload = multer({ storage: storage });
@@ -80,8 +80,8 @@ app.get('/admin', requireAuth, (req, res) => {
     res.sendFile(path.join(__dirname, '../client', 'admin.html'));
 });
 
-// 🔹 파일 업로드 엔드포인트 (픽셀 제한 오류 해결)
-app.post('/upload', requireAuth, upload.single('svsFile'), async (req, res) => {
+// 파일 업로드 처리
+app.post('/upload', upload.single('svsFile'), async (req, res) => {
     if (!req.file) {
         return res.status(400).json({ error: "파일이 선택되지 않았습니다." });
     }
@@ -96,29 +96,8 @@ app.post('/upload', requireAuth, upload.single('svsFile'), async (req, res) => {
 
         console.log(`🔹 업로드된 파일: ${filePath}`);
 
-        // 🚀 이미지 크기 초과 방지를 위한 리사이징 적용
-        const image = sharp(filePath);
-        const metadata = await image.metadata();
-
-        console.log(`🖼 업로드된 이미지 크기: ${metadata.width}x${metadata.height}`);
-
-        let finalFilePath = filePath;
-        if (metadata.width * metadata.height > 100000000) { // 1억 픽셀 초과 시
-            console.log("⚠️ 이미지 크기가 너무 큽니다. 리사이징 적용...");
-            const resizedPath = filePath.replace('.svs', '_resized.svs');
-
-            await image.resize({
-                width: Math.min(10000, metadata.width), 
-                height: Math.min(10000, metadata.height),
-                fit: 'inside'
-            }).toFile(resizedPath);
-
-            console.log(`📉 리사이징 완료: ${resizedPath}`);
-            finalFilePath = resizedPath;
-        }
-
-        // 🚀 타일 생성 실행
-        await generateTiles(finalFilePath, outputDir);
+        // 🚀 OpenCV로 타일 생성
+        await generateTiles(filePath, outputDir);
         res.json({ tileSource: req.file.filename });
 
     } catch (error) {
