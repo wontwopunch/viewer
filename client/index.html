@@ -120,15 +120,16 @@
     <div id="viewer-container">
         <h2>SVS 파일 뷰어</h2>
         <div id="openseadragon"></div>
+    </div>
 
-        <!-- ✅ 파일 업로드 추가 -->
-        <div class="upload-container">
-            <input type="file" id="fileInput" accept=".svs">
-            <button onclick="uploadFile()">파일 업로드</button>
-            <div id="progress-container">
-                <span id="progress-text">0%</span>
-                <progress id="progress-bar" value="0" max="100"></progress>
-            </div>
+    <!-- ✅ 파일 업로드 추가 -->
+    <div class="upload-container">
+        <h3>📤 파일 업로드</h3>
+        <input type="file" id="fileInput" accept=".svs">
+        <button onclick="uploadFile()">업로드</button>
+        <div id="progress-container">
+            <span id="progress-text">0%</span>
+            <progress id="progress-bar" value="0" max="100"></progress>
         </div>
     </div>
 
@@ -136,18 +137,13 @@
         const urlParams = new URLSearchParams(window.location.search);
         const fileId = urlParams.get("file");
 
-        if (!fileId) {
-            console.warn("⚠️ 파일 ID가 없습니다. 기본 안내 메시지 표시");
-            document.getElementById("viewer-container").innerHTML = `
-                <h2>📂 파일을 선택하세요</h2>
-                <p>뷰어를 사용하려면 먼저 파일을 선택하거나 업로드하세요.</p>
-            `;
-        } else {
-            checkFileAccess();
-        }
-
         async function checkFileAccess() {
             try {
+                if (!fileId) {
+                    console.warn("⚠️ 파일 ID가 없습니다. 기본 안내 메시지 표시");
+                    return;
+                }
+
                 const response = await fetch(`/api/files/${fileId}`);
                 const file = await response.json();
 
@@ -164,6 +160,7 @@
         }
 
         async function fetchMemos() {
+            if (!fileId) return;
             const response = await fetch(`/api/memos/${fileId}`);
             const memos = await response.json();
             const memoList = document.getElementById("memo-list");
@@ -178,6 +175,7 @@
         }
 
         async function addMemo() {
+            if (!fileId) return;
             const memoInput = document.getElementById("memo-input").value;
             await fetch(`/api/memos/${fileId}`, {
                 method: "POST",
@@ -241,6 +239,8 @@
                 showNavigator: true
             });
         }
+
+        checkFileAccess();
     </script>
 </body>
 </html>
