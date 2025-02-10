@@ -214,23 +214,35 @@
             };
 
             xhr.onload = function () {
-                if (xhr.status === 200) {
+                try {
                     const response = JSON.parse(xhr.responseText);
-                    alert("파일 업로드 완료!");
-                    progressContainer.style.display = "none";
-                    window.location.href = `/index.html?file=${response.tileSource}`;
-                } else {
-                    alert("업로드 실패. 서버 로그를 확인하세요.");
+
+                    if (xhr.status === 200) {
+                        if (response.tileSource) {
+                            alert("파일 업로드 완료!");
+                            progressContainer.style.display = "none";
+                            window.location.href = `/index.html?file=${response.tileSource}`;
+                        } else {
+                            alert("🚨 오류: 서버에서 정상적인 응답을 받지 못했습니다.");
+                        }
+                    } else {
+                        console.error("서버 오류:", response);
+                        alert(`⚠️ 업로드 실패: ${response.error || "서버 오류 발생"}`);
+                    }
+                } catch (error) {
+                    console.error("응답 파싱 오류:", error);
+                    alert("⚠️ 서버 응답을 해석하는 중 오류가 발생했습니다.");
                 }
             };
 
             xhr.onerror = function () {
-                alert("네트워크 오류 발생.");
+                alert("❌ 네트워크 오류 발생. 다시 시도해주세요.");
             };
 
             xhr.send(formData);
         }
 
+        
         function loadViewer(fileId) {
             OpenSeadragon({
                 id: "openseadragon",
