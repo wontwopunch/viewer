@@ -9,7 +9,8 @@ const tileRouter = require('./routes/tile'); // 타일 라우터
 const authRouter = require('./routes/auth'); // 로그인 관련 라우터
 const fileRouter = require('./routes/files');
 const { generateTiles } = require('./utils/vips'); // 타일 생성 유틸리티
-const connectDB = require('./db');
+const connectDB = require('./db.js'); // 확장자 명시
+
 
 const app = express();
 const PORT = 3000;
@@ -34,7 +35,8 @@ app.use(express.json());
 const upload = multer({ dest: 'uploads/' });
 
 // 정적 파일 제공 (로그인 페이지 및 뷰어 페이지)
-app.use(express.static(path.join(__dirname, '../client')));
+app.use(express.static(path.join(__dirname, 'client')));
+
 
 // 라우터 연결
 app.use('/api', authRouter);
@@ -50,10 +52,18 @@ function requireAuth(req, res, next) {
     }
 }
 
-// 보호된 관리자 페이지
-app.get('/admin', requireAuth, (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/admin.html'));
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'client', 'login.html'));
 });
+
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'client', 'admin.html'));
+});
+
+app.get('/login', (req, res) => {
+    res.sendFile(path.join(__dirname, 'client', 'login.html'));
+});
+
 
 // SVS 파일 업로드 엔드포인트
 app.post('/upload', requireAuth, upload.single('svsFile'), async (req, res) => {

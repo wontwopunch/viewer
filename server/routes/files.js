@@ -18,6 +18,10 @@ router.get('/', async (req, res) => {
 });
 
 router.get('/:id', async (req, res) => {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return res.status(400).json({ error: "잘못된 파일 ID입니다." });
+    }
+
     const file = await File.findById(req.params.id);
     if (!file) {
         return res.status(404).json({ error: "파일을 찾을 수 없습니다." });
@@ -30,16 +34,19 @@ router.get('/:id', async (req, res) => {
 
 // 파일 공개/비공개 전환 API
 router.post('/:id/toggle', async (req, res) => {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return res.status(400).json({ error: "잘못된 파일 ID입니다." });
+    }
+
     const file = await File.findById(req.params.id);
     if (!file) {
         return res.status(404).json({ error: "파일을 찾을 수 없습니다." });
     }
 
-    // 상태 변경 (공개 <-> 비공개)
     file.public = !file.public;
     await file.save();
 
-    res.json({ message: "File visibility updated", file });
+    res.json({ message: "파일 공개 상태가 변경되었습니다.", file });
 });
 
 
