@@ -2,6 +2,9 @@ const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
 
+// 🚀 sharp의 최대 픽셀 한도를 늘려서 해결
+sharp.cache({ limits: { pixel: false } });
+
 /**
  * 이미지 파일을 타일로 변환
  */
@@ -13,9 +16,9 @@ async function generateTiles(inputPath, outputDir, tileSize = 256) {
             throw new Error(`입력 파일이 존재하지 않습니다: ${inputPath}`);
         }
 
-        const image = sharp(inputPath);
-        const metadata = await image.metadata();
+        const image = sharp(inputPath).limitInputPixels(false); // ✅ 픽셀 제한 해제
 
+        const metadata = await image.metadata();
         console.log(`🖼 이미지 크기: ${metadata.width}x${metadata.height}`);
 
         if (!fs.existsSync(outputDir)) {
