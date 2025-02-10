@@ -11,12 +11,12 @@ sharp.cache({ limits: { pixel: false } });
 async function generateTiles(inputPath, outputDir, tileSize = 256) {
     try {
         console.log(`📂 처리할 이미지: ${inputPath}`);
-        
+
         if (!fs.existsSync(inputPath)) {
             throw new Error(`입력 파일이 존재하지 않습니다: ${inputPath}`);
         }
 
-        const image = sharp(inputPath).limitInputPixels(false); // ✅ 픽셀 제한 해제
+        const image = sharp(inputPath);
 
         const metadata = await image.metadata();
         console.log(`🖼 이미지 크기: ${metadata.width}x${metadata.height}`);
