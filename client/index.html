@@ -268,12 +268,21 @@
                         tileSize: 256,
                         minLevel: 0,
                         maxLevel: 10,
+                        getLevelScale: function(level) {
+                            return 1 / Math.pow(2, level);
+                        },
                         getTileUrl: function(level, x, y) {
-                            if (typeof level === 'undefined' || typeof x === 'undefined' || typeof y === 'undefined') {
-                                console.log('Invalid tile coordinates:', {level, x, y});
+                            // 좌표 로깅
+                            console.log('Requesting tile:', {level, x, y});
+                            
+                            // 좌표가 유효한지 확인
+                            if (level === undefined || x === undefined || y === undefined) {
                                 return '';
                             }
-                            return `/tiles/${fileId}/tile_${level}_${x}_${y}.jpg`;
+
+                            // 실제 레벨은 역순으로 (최대 레벨에서 빼기)
+                            const actualLevel = this.maxLevel - level;
+                            return `/tiles/${fileId}/tile_${actualLevel}_${x}_${y}.jpg`;
                         }
                     },
                     showNavigator: true,

@@ -8,13 +8,18 @@ router.get('/:tileSource/tile_:level_:x_:y.jpg', (req, res) => {
     const { tileSource, level, x, y } = req.params;
     console.log('타일 요청 파라미터:', { tileSource, level, x, y });
 
-    // 모든 파라미터가 유효한지 확인
-    if (!tileSource || !level || !x || !y) {
-        console.log('잘못된 타일 요청 파라미터');
+    // 숫자로 변환
+    const numLevel = parseInt(level);
+    const numX = parseInt(x);
+    const numY = parseInt(y);
+
+    // 유효성 검사
+    if (isNaN(numLevel) || isNaN(numX) || isNaN(numY)) {
+        console.log('잘못된 타일 요청 파라미터 (숫자가 아님)');
         return res.status(400).send('Invalid tile parameters');
     }
 
-    const tilePath = path.join(__dirname, '../../tiles', tileSource, `tile_${level}_${x}_${y}.jpg`);
+    const tilePath = path.join(__dirname, '../../tiles', tileSource, `tile_${numLevel}_${numX}_${numY}.jpg`);
     console.log('요청된 타일 경로:', tilePath);
 
     try {
