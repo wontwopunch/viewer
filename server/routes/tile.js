@@ -10,19 +10,17 @@ router.get('/:tileSource/tile_:x_:y.jpg', (req, res) => {
 
     try {
         // 좌표를 숫자로 변환
-        const coords = {
-            x: parseInt(x),
-            y: parseInt(y)
-        };
+        const tileX = parseInt(x);
+        const tileY = parseInt(y);
 
         // 좌표 유효성 검사
-        if (isNaN(coords.x) || isNaN(coords.y)) {
-            console.error('잘못된 좌표:', coords);
+        if (isNaN(tileX) || isNaN(tileY)) {
+            console.error('잘못된 좌표:', { x, y });
             return res.status(400).send('Invalid coordinates');
         }
 
         // 타일 파일 경로
-        const tilePath = path.join(__dirname, '../../tiles', tileSource, `tile_${coords.x}_${coords.y}.jpg`);
+        const tilePath = path.join(__dirname, '../../tiles', tileSource, `tile_${tileX}_${tileY}.jpg`);
         console.log('찾는 타일:', tilePath);
 
         if (fs.existsSync(tilePath)) {

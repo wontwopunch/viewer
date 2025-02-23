@@ -289,7 +289,12 @@
                     defaultZoomLevel: 0,
                     visibilityRatio: 1,
                     minZoomLevel: 0.1,
-                    maxZoomLevel: 10
+                    maxZoomLevel: 10,
+                    // 추가 설정
+                    immediateRender: true,
+                    wrapHorizontal: false,
+                    wrapVertical: false,
+                    constrainDuringPan: true
                 });
             } catch (error) {
                 console.error("뷰어 초기화 중 오류:", error);
