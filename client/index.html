@@ -284,7 +284,10 @@
                         }
                     },
                     showNavigator: true,
-                    navigatorPosition: "BOTTOM_RIGHT"
+                    navigatorPosition: "BOTTOM_RIGHT",
+                    maxZoomPixelRatio: 2,
+                    defaultZoomLevel: 0,
+                    visibilityRatio: 1
                 });
             } catch (error) {
                 console.error("뷰어 초기화 중 오류:", error);

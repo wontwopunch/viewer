@@ -8,25 +8,32 @@ router.get('/:tileSource/tile_:x_:y.jpg', (req, res) => {
     const { tileSource, x, y } = req.params;
     console.log('타일 요청:', { tileSource, x, y });
 
-    // 파라미터 파싱 - 언더스코어로 구분된 값 처리
-    let [xCoord, yCoord] = y.includes('_') ? y.split('_') : [x, y];
+    // 좌표 파싱
+    let coords = { x: 0, y: 0 };
     
-    const params = {
-        x: parseInt(xCoord),
-        y: parseInt(yCoord)
-    };
-
-    // 파라미터 검증
-    if (Object.values(params).some(isNaN)) {
-        console.error('잘못된 타일 파라미터:', params);
-        return res.status(400).send('Invalid tile parameters');
-    }
-
-    // 타일 파일 경로
-    const tilePath = path.join(__dirname, '../../tiles', tileSource, `tile_0_${params.x}_${params.y}.jpg`);
-    console.log('타일 경로:', tilePath);
-
     try {
+        // x_y 형식으로 들어오는 경우
+        if (y.includes('_')) {
+            const [yX, yY] = y.split('_').map(Number);
+            coords = { x: yX, y: yY };
+        } else {
+            // 정상적인 x, y 파라미터인 경우
+            coords = {
+                x: parseInt(x),
+                y: parseInt(y)
+            };
+        }
+
+        // 좌표 유효성 검사
+        if (isNaN(coords.x) || isNaN(coords.y)) {
+            console.error('잘못된 좌표:', coords);
+            return res.status(400).send('Invalid coordinates');
+        }
+
+        // 타일 파일 경로
+        const tilePath = path.join(__dirname, '../../tiles', tileSource, `tile_0_${coords.x}_${coords.y}.jpg`);
+        console.log('타일 경로:', tilePath);
+
         if (fs.existsSync(tilePath)) {
             res.sendFile(tilePath);
         } else {
@@ -41,8 +48,8 @@ router.get('/:tileSource/tile_:x_:y.jpg', (req, res) => {
             res.status(404).send('Tile not found');
         }
     } catch (error) {
-        console.error('타일 전송 오류:', error);
-        res.status(500).send('Error serving tile');
+        console.error('타일 처리 오류:', error);
+        res.status(500).send('Error processing tile request');
     }
 });
 
