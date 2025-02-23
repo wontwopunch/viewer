@@ -267,7 +267,11 @@
                         width: file.width,
                         tileSize: 256,
                         getTileUrl: function(level, x, y) {
-                            return `/tiles/${fileId}/tile_${x}_${y}.jpg`;
+                            console.log('타일 요청:', level, x, y);
+                            if (typeof x === 'undefined' || typeof y === 'undefined') {
+                                return '';
+                            }
+                            return `/tiles/${fileId}/tile_${level}_${x}_${y}.jpg`;
                         }
                     },
                     showNavigator: true,
