@@ -266,10 +266,13 @@
                         height: file.height,
                         width: file.width,
                         tileSize: 256,
+                        minLevel: 0,
+                        maxLevel: 10,
                         getTileUrl: function(level, x, y) {
-                            // y 좌표를 x 좌표에 추가
-                            const tileX = y ? `${x}_${y}` : x;
-                            return `/tiles/${fileId}/tile_${level}_${tileX}.jpg`;
+                            if (typeof x === 'undefined' || typeof y === 'undefined') {
+                                return '';
+                            }
+                            return `/tiles/${fileId}/tile_0_${x}_${y}.jpg`;
                         }
                     },
                     showNavigator: true,
