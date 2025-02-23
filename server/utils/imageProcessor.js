@@ -19,9 +19,11 @@ async function generateTiles(inputPath, outputDir, tileSize = 256) {
         // Python 스크립트 실행
         const options = {
             mode: 'text',
-            pythonPath: 'python3',
+            pythonPath: path.join(__dirname, '../../venv/bin/python3'),
             scriptPath: path.join(__dirname),
-            args: [inputPath, outputDir]
+            args: [inputPath, outputDir],
+            stderrParser: (line) => console.error('Python Error:', line),
+            stdoutParser: (line) => console.log('Python Output:', line)
         };
 
         return new Promise((resolve, reject) => {
