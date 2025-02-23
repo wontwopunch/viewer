@@ -1,6 +1,5 @@
-const { PythonShell } = require('python-shell');
+const { spawn } = require('child_process');
 const path = require('path');
-const fs = require('fs');
 
 /**
  * SVS 파일을 타일로 변환
@@ -8,50 +7,40 @@ const fs = require('fs');
  * @param {string} outputDir - 출력 타일 저장 디렉토리
  * @param {number} tileSize - 타일 크기 (기본값: 256)
  */
-async function generateTiles(inputPath, outputDir, tileSize = 256) {
-    try {
-        console.log(`📂 처리할 SVS 파일: ${inputPath}`);
+const generateTiles = (filePath, outputDir) => {
+    return new Promise((resolve, reject) => {
+        console.log('📂 처리할 SVS 파일:', filePath);
+        
+        const pythonProcess = spawn('python3', [
+            path.join(__dirname, 'slide_processor.py'),
+            filePath,
+            outputDir
+        ]);
 
-        if (!fs.existsSync(inputPath)) {
-            throw new Error(`❌ 입력 파일이 존재하지 않습니다: ${inputPath}`);
-        }
+        let imageSize = null;
 
-        // Python 스크립트 실행
-        const options = {
-            mode: 'text',
-            pythonPath: path.join(__dirname, '../../venv/bin/python3'),
-            scriptPath: path.join(__dirname),
-            args: [inputPath, outputDir],
-            stderrParser: (line) => console.error('Python Error:', line)
-        };
-
-        return new Promise((resolve, reject) => {
-            let imageSize = null;
+        pythonProcess.stdout.on('data', (data) => {
+            const output = data.toString();
+            console.log('Python 출력:', output);
             
-            PythonShell.run('slide_processor.py', {
-                ...options,
-                stdoutParser: (line) => {
-                    console.log('Python Output:', line);
-                    if (line.startsWith('IMAGE_SIZE:')) {
-                        const [width, height] = line.split(':')[1].split(',').map(Number);
-                        imageSize = { width, height };
-                    }
-                }
-            }, function (err) {
-                if (err) {
-                    console.error("❌ 타일 생성 중 오류:", err);
-                    reject(err);
-                } else {
-                    console.log("✅ 모든 타일 생성 완료!");
-                    resolve(imageSize);  // 이미지 크기 반환
-                }
-            });
+            if (output.startsWith('IMAGE_SIZE:')) {
+                const [width, height] = output.split(':')[1].split(',').map(Number);
+                imageSize = { width, height };
+            }
         });
 
-    } catch (error) {
-        console.error("❌ 타일 생성 중 오류:", error);
-        throw error;
-    }
-}
+        pythonProcess.stderr.on('data', (data) => {
+            console.error('Python 에러:', data.toString());
+        });
+
+        pythonProcess.on('close', (code) => {
+            if (code !== 0 || !imageSize) {
+                reject(new Error('이미지 처리 실패'));
+            } else {
+                resolve(imageSize);
+            }
+        });
+    });
+};
 
 module.exports = { generateTiles };
