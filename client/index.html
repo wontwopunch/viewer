@@ -49,7 +49,7 @@
         }
 
         #memo-container {
-            flex: 0.7; /* ✅ 메모 패널 크기 조정 */
+            flex: 0.7;
             display: flex;
             flex-direction: column;
             padding: 10px;
@@ -84,7 +84,6 @@
             background-color: #0056b3;
         }
 
-        /* ✅ 관리자 페이지 버튼 (위치 이동 + 크기 축소) */
         .admin-btn {
             display: block;
             margin-bottom: 10px;
@@ -93,7 +92,6 @@
             background-color: #28a745;
         }
 
-        /* ✅ 파일 업로드 스타일 */
         .upload-container {
             margin-top: 10px;
             text-align: center;
@@ -107,7 +105,6 @@
 </head>
 <body>
     <div id="memo-container">
-        <!-- ✅ 관리자 페이지 이동 버튼을 메모 작성 위로 이동 -->
         <button class="admin-btn" onclick="location.href='/admin'">관리자 페이지</button>
 
         <h3>메모 작성</h3>
@@ -116,13 +113,11 @@
         <button onclick="addMemo()">메모 추가</button>
     </div>
 
-    <!-- 뷰어 영역 -->
     <div id="viewer-container">
         <h2>SVS 파일 뷰어</h2>
         <div id="openseadragon"></div>
     </div>
 
-    <!-- ✅ 파일 업로드 추가 -->
     <div class="upload-container">
         <h3>📤 파일 업로드</h3>
         <input type="file" id="fileInput" accept=".svs">
@@ -136,7 +131,6 @@
     <script>
         async function checkFileAccess() {
             try {
-                // URL 파라미터를 함수 내부로 이동
                 const urlParams = new URLSearchParams(window.location.search);
                 const fileId = urlParams.get("file");
                 console.log('URL 파라미터 확인:', { search: window.location.search, fileId });
@@ -226,8 +220,15 @@
                     if (xhr.status === 200) {
                         alert("파일 업로드 완료!");
                         progressContainer.style.display = "none";
-                        console.log('리다이렉트 URL:', `/index.html?file=${response.tileSource}`);
-                        window.location.href = `/index.html?file=${response.tileSource}`;
+                        
+                        // 파일 이름만 추출
+                        const fileName = response.tileSource;
+                        console.log('파일 이름:', fileName);
+                        
+                        // 리다이렉트
+                        const redirectUrl = `/index.html?file=${fileName}`;
+                        console.log('리다이렉트 URL:', redirectUrl);
+                        window.location.href = redirectUrl;
                     } else {
                         console.error("서버 오류:", response);
                         alert(`⚠️ 업로드 실패: ${response.error || "서버 오류 발생"}`);

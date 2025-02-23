@@ -12,6 +12,7 @@ const authRouter = require('./routes/auth');
 const fileRouter = require('./routes/files');
 const { generateTiles } = require('./utils/imageProcessor');
 const connectDB = require('./db.js');
+const FileModel = require('./models/file');
 
 const app = express();
 const PORT = 3000;
@@ -99,6 +100,14 @@ app.post('/upload', upload.single('svsFile'), async (req, res) => {
 
         // 타일 생성 및 이미지 크기 받기
         const imageSize = await generateTiles(filePath, outputDir);
+        
+        // 파일 정보를 MongoDB에 저장
+        const file = new FileModel({
+            name: req.file.originalname,
+            path: req.file.filename,
+            public: true
+        });
+        await file.save();
         
         res.json({ 
             tileSource: req.file.filename,
