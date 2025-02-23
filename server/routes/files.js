@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
-const File = require('../models/file');
 const path = require('path');
 const fs = require('fs');
 const openslide = require('openslide-python');
@@ -23,25 +22,40 @@ router.get('/', async (req, res) => {
 
 router.get('/:fileId', async (req, res) => {
     try {
-        const file = await FileModel.findOne({ id: req.params.fileId });
-        if (!file) {
-            return res.status(404).json({ error: "파일을 찾을 수 없습니다." });
-        }
-
         // SVS 파일 경로
         const filePath = path.join(__dirname, '../../uploads', req.params.fileId);
         
-        // OpenSlide로 이미지 크기 가져오기
-        const slide = openslide.OpenSlide(filePath);
-        const width = slide.dimensions[0];
-        const height = slide.dimensions[1];
-        slide.close();
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({ error: "파일을 찾을 수 없습니다." });
+        }
 
-        res.json({
-            ...file.toObject(),
-            width,
-            height
+        // Python 스크립트로 이미지 크기 가져오기
+        const pythonProcess = require('child_process').spawn('python3', [
+            path.join(__dirname, '../utils/slide_processor.py'),
+            filePath,
+            'size-only'
+        ]);
+
+        let imageSize = null;
+        pythonProcess.stdout.on('data', (data) => {
+            const output = data.toString();
+            if (output.startsWith('IMAGE_SIZE:')) {
+                const [width, height] = output.split(':')[1].split(',').map(Number);
+                imageSize = { width, height };
+            }
         });
+
+        pythonProcess.on('close', (code) => {
+            if (code !== 0 || !imageSize) {
+                return res.status(500).json({ error: "이미지 크기를 가져올 수 없습니다." });
+            }
+            res.json({
+                id: req.params.fileId,
+                width: imageSize.width,
+                height: imageSize.height
+            });
+        });
+
     } catch (error) {
         console.error('파일 정보 조회 중 오류:', error);
         res.status(500).json({ error: "서버 오류" });
