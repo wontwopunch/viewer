@@ -277,7 +277,7 @@
                             const tileX = Math.floor(x * 256); // 타일 크기(256)를 곱함
                             const tileY = Math.floor(y * 256);
 
-                            // URL 생성
+                            // URL 생성 (x와 y를 하나의 coords 파라미터로)
                             const url = `/tiles/${fileId}/tile_${tileX}_${tileY}.jpg`;
                             console.log('Requesting tile:', {x: tileX, y: tileY, url});
                             return url;
