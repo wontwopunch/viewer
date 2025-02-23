@@ -3,7 +3,6 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const path = require('path');
 const fs = require('fs');
-const openslide = require('openslide-python');
 
 // MongoDB 파일 스키마 정의
 const FileSchema = new mongoose.Schema({
