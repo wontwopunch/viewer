@@ -4,13 +4,12 @@ const fs = require('fs');
 const router = express.Router();
 
 // 타일 요청 처리
-router.get('/:tileSource/tile_:level_:x_:y.jpg', (req, res) => {
-    const { tileSource, level, x, y } = req.params;
-    console.log('타일 요청:', { tileSource, level, x, y });
+router.get('/:tileSource/tile_:x_:y.jpg', (req, res) => {
+    const { tileSource, x, y } = req.params;
+    console.log('타일 요청:', { tileSource, x, y });
 
     // 파라미터 파싱
     const params = {
-        level: parseInt(level),
         x: parseInt(x),
         y: parseInt(y)
     };
