@@ -6,34 +6,35 @@ const router = express.Router();
 // 타일 요청 처리
 router.get('/:tileSource/tile_:level_:x_:y.jpg', (req, res) => {
     const { tileSource, level, x, y } = req.params;
-    console.log('타일 요청 파라미터:', { tileSource, level, x, y });
+    console.log('원본 타일 요청 파라미터:', { tileSource, level, x, y });
 
-    // 숫자로 변환
-    const numLevel = parseInt(level);
-    const numX = parseInt(x);
-    const numY = parseInt(y);
+    // 경로 파라미터 파싱
+    const params = {
+        level: parseInt(level),
+        x: parseInt(x),
+        y: parseInt(y)
+    };
 
-    // 유효성 검사
-    if (isNaN(numLevel) || isNaN(numX) || isNaN(numY)) {
-        console.log('잘못된 타일 요청 파라미터 (숫자가 아님)');
+    // 파라미터 검증
+    if (Object.values(params).some(isNaN)) {
+        console.error('잘못된 타일 파라미터:', params);
         return res.status(400).send('Invalid tile parameters');
     }
 
-    const tilePath = path.join(__dirname, '../../tiles', tileSource, `tile_${numLevel}_${numX}_${numY}.jpg`);
-    console.log('요청된 타일 경로:', tilePath);
+    // 타일 파일 경로
+    const tilePath = path.join(__dirname, '../../tiles', tileSource, `tile_${params.level}_${params.x}_${params.y}.jpg`);
+    console.log('찾는 타일 경로:', tilePath);
 
     try {
         if (fs.existsSync(tilePath)) {
             res.sendFile(tilePath);
         } else {
-            // 디버깅을 위한 디렉토리 내용 출력 (첫 10개만)
+            // 디버깅용 디렉토리 내용 출력
             const tileDir = path.dirname(tilePath);
             if (fs.existsSync(tileDir)) {
-                const files = fs.readdirSync(tileDir);
-                console.log('디렉토리 내용:', files.slice(0, 10), '... 외', files.length - 10, '개');
+                const files = fs.readdirSync(tileDir).slice(0, 5);
+                console.log('디렉토리 내 타일 예시:', files);
             }
-            
-            console.log('타일 없음:', tilePath);
             res.status(404).send('Tile not found');
         }
     } catch (error) {
