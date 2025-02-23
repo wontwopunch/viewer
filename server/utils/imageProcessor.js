@@ -22,18 +22,28 @@ async function generateTiles(inputPath, outputDir, tileSize = 256) {
             pythonPath: path.join(__dirname, '../../venv/bin/python3'),
             scriptPath: path.join(__dirname),
             args: [inputPath, outputDir],
-            stderrParser: (line) => console.error('Python Error:', line),
-            stdoutParser: (line) => console.log('Python Output:', line)
+            stderrParser: (line) => console.error('Python Error:', line)
         };
 
         return new Promise((resolve, reject) => {
-            PythonShell.run('slide_processor.py', options, function (err) {
+            let imageSize = null;
+            
+            PythonShell.run('slide_processor.py', {
+                ...options,
+                stdoutParser: (line) => {
+                    console.log('Python Output:', line);
+                    if (line.startsWith('IMAGE_SIZE:')) {
+                        const [width, height] = line.split(':')[1].split(',').map(Number);
+                        imageSize = { width, height };
+                    }
+                }
+            }, function (err) {
                 if (err) {
                     console.error("❌ 타일 생성 중 오류:", err);
                     reject(err);
                 } else {
                     console.log("✅ 모든 타일 생성 완료!");
-                    resolve();
+                    resolve(imageSize);  // 이미지 크기 반환
                 }
             });
         });

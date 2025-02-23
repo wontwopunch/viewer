@@ -238,21 +238,28 @@
             xhr.send(formData);
         }
 
-        function loadViewer(fileId) {
-            OpenSeadragon({
-                id: "openseadragon",
-                prefixUrl: "https://cdnjs.cloudflare.com/ajax/libs/openseadragon/2.4.2/images/",
-                tileSources: {
-                    height: 10000,  // 이미지 높이 (실제 크기로 수정 필요)
-                    width: 10000,   // 이미지 너비 (실제 크기로 수정 필요)
-                    tileSize: 256,
-                    getTileUrl: function(level, x, y) {
-                        return `/tiles/${fileId}/tile_${x}_${y}.jpg`;
-                    }
-                },
-                showNavigator: true,
-                navigatorPosition: "BOTTOM_RIGHT"
-            });
+        async function loadViewer(fileId) {
+            try {
+                const response = await fetch(`/api/files/${fileId}`);
+                const file = await response.json();
+
+                OpenSeadragon({
+                    id: "openseadragon",
+                    prefixUrl: "https://cdnjs.cloudflare.com/ajax/libs/openseadragon/2.4.2/images/",
+                    tileSources: {
+                        height: file.height,  // 서버에서 받은 실제 크기
+                        width: file.width,    // 서버에서 받은 실제 크기
+                        tileSize: 256,
+                        getTileUrl: function(level, x, y) {
+                            return `/tiles/${fileId}/tile_${x}_${y}.jpg`;
+                        }
+                    },
+                    showNavigator: true,
+                    navigatorPosition: "BOTTOM_RIGHT"
+                });
+            } catch (error) {
+                console.error("뷰어 초기화 중 오류:", error);
+            }
         }
 
         checkFileAccess();

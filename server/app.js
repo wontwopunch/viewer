@@ -97,9 +97,14 @@ app.post('/upload', upload.single('svsFile'), async (req, res) => {
 
         console.log(`🔹 업로드된 파일: ${filePath}`);
 
-        // 🚀 vips로 타일 생성
-        await generateTiles(filePath, outputDir);
-        res.json({ tileSource: req.file.filename });
+        // 타일 생성 및 이미지 크기 받기
+        const imageSize = await generateTiles(filePath, outputDir);
+        
+        res.json({ 
+            tileSource: req.file.filename,
+            width: imageSize.width,
+            height: imageSize.height
+        });
 
     } catch (error) {
         console.error('파일 처리 오류:', error);

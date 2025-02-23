@@ -12,7 +12,7 @@ def generate_tiles(input_path, output_dir, tile_size=256):
         width = slide.dimensions[0]
         height = slide.dimensions[1]
         
-        print(f"🖼 원본 이미지 크기: {width} x {height}")
+        print(f"IMAGE_SIZE:{width},{height}")  # 크기 정보 출력
         
         # 출력 디렉토리 생성
         os.makedirs(output_dir, exist_ok=True)
