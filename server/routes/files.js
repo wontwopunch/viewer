@@ -3,15 +3,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const path = require('path');
 const fs = require('fs');
-
-// MongoDB 파일 스키마 정의
-const FileSchema = new mongoose.Schema({
-    name: String,
-    path: String,
-    public: { type: Boolean, default: true } // 기본값: 공개
-});
-
-const FileModel = mongoose.model('File', FileSchema);
+const FileModel = require('../models/file');  // 모델 임포트
 
 // 파일 목록 조회 API
 router.get('/', async (req, res) => {
@@ -21,10 +13,7 @@ router.get('/', async (req, res) => {
 
 router.get('/:fileId', async (req, res) => {
     try {
-        console.log('파일 정보 요청:', req.params.fileId);
-        
         const filePath = path.join(__dirname, '../../uploads', req.params.fileId);
-        console.log('파일 경로:', filePath);
         
         if (!fs.existsSync(filePath)) {
             console.log('파일 없음:', filePath);
