@@ -8,10 +8,12 @@ router.get('/:tileSource/tile_:x_:y.jpg', (req, res) => {
     const { tileSource, x, y } = req.params;
     console.log('타일 요청:', { tileSource, x, y });
 
-    // 파라미터 파싱
+    // 파라미터 파싱 - 언더스코어로 구분된 값 처리
+    let [xCoord, yCoord] = y.includes('_') ? y.split('_') : [x, y];
+    
     const params = {
-        x: parseInt(x),
-        y: parseInt(y)
+        x: parseInt(xCoord),
+        y: parseInt(yCoord)
     };
 
     // 파라미터 검증

@@ -277,7 +277,7 @@
                             const tileX = Math.floor(x);
                             const tileY = Math.floor(y);
 
-                            // URL 생성 (level은 무시하고 항상 0 사용)
+                            // URL 생성
                             const url = `/tiles/${fileId}/tile_${tileX}_${tileY}.jpg`;
                             console.log('Requesting tile:', {x: tileX, y: tileY, url});
                             return url;
