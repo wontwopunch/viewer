@@ -97,6 +97,7 @@ app.post('/upload', upload.single('svsFile'), async (req, res) => {
         }
 
         console.log(`🔹 업로드된 파일: ${filePath}`);
+        console.log('파일 정보:', req.file);
 
         // 타일 생성 및 이미지 크기 받기
         const imageSize = await generateTiles(filePath, outputDir);
@@ -109,11 +110,13 @@ app.post('/upload', upload.single('svsFile'), async (req, res) => {
         });
         await file.save();
         
-        res.json({ 
+        const response = { 
             tileSource: req.file.filename,
             width: imageSize.width,
             height: imageSize.height
-        });
+        };
+        console.log('응답 데이터:', response);
+        res.json(response);
 
     } catch (error) {
         console.error('파일 처리 오류:', error);

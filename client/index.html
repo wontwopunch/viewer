@@ -217,7 +217,7 @@
                     const response = JSON.parse(xhr.responseText);
                     console.log('업로드 응답:', response);
 
-                    if (xhr.status === 200) {
+                    if (xhr.status === 200 && response.tileSource) {
                         alert("파일 업로드 완료!");
                         progressContainer.style.display = "none";
                         
@@ -226,7 +226,7 @@
                         console.log('파일 이름:', fileName);
                         
                         // 리다이렉트
-                        const redirectUrl = `/index.html?file=${fileName}`;
+                        const redirectUrl = `/index.html?file=${encodeURIComponent(fileName)}`;
                         console.log('리다이렉트 URL:', redirectUrl);
                         window.location.href = redirectUrl;
                     } else {
