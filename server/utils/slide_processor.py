@@ -3,6 +3,17 @@ import os
 import openslide
 from PIL import Image
 
+def get_image_size(input_path):
+    try:
+        slide = openslide.OpenSlide(input_path)
+        width, height = slide.dimensions
+        print(f"IMAGE_SIZE:{width},{height}")
+        slide.close()
+        return True
+    except Exception as e:
+        print(f"❌ 오류 발생: {str(e)}")
+        return False
+
 def generate_tiles(input_path, output_dir, tile_size=256):
     try:
         # SVS 파일 로드
@@ -12,7 +23,7 @@ def generate_tiles(input_path, output_dir, tile_size=256):
         width = slide.dimensions[0]
         height = slide.dimensions[1]
         
-        print(f"IMAGE_SIZE:{width},{height}")  # 크기 정보 출력
+        print(f"IMAGE_SIZE:{width},{height}")
         
         # 출력 디렉토리 생성
         os.makedirs(output_dir, exist_ok=True)
@@ -41,8 +52,12 @@ def generate_tiles(input_path, output_dir, tile_size=256):
         return False
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Usage: python slide_processor.py <input_path> <output_dir>")
+    if len(sys.argv) < 3:
+        print("Usage: python slide_processor.py <input_path> <output_dir|size-only>")
         sys.exit(1)
     
-    generate_tiles(sys.argv[1], sys.argv[2])
+    input_path = sys.argv[1]
+    if sys.argv[2] == 'size-only':
+        get_image_size(input_path)
+    else:
+        generate_tiles(input_path, sys.argv[2])
