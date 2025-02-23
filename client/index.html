@@ -242,8 +242,16 @@
             OpenSeadragon({
                 id: "openseadragon",
                 prefixUrl: "https://cdnjs.cloudflare.com/ajax/libs/openseadragon/2.4.2/images/",
-                tileSources: `/tiles/${fileId}/info.json`,
-                showNavigator: true
+                tileSources: {
+                    height: 10000,  // 이미지 높이 (실제 크기로 수정 필요)
+                    width: 10000,   // 이미지 너비 (실제 크기로 수정 필요)
+                    tileSize: 256,
+                    getTileUrl: function(level, x, y) {
+                        return `/tiles/${fileId}/tile_${x}_${y}.jpg`;
+                    }
+                },
+                showNavigator: true,
+                navigatorPosition: "BOTTOM_RIGHT"
             });
         }
 
