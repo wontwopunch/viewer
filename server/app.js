@@ -12,7 +12,7 @@ const authRouter = require('./routes/auth');
 const fileRouter = require('./routes/files');
 const { generateTiles } = require('./utils/imageProcessor');
 const connectDB = require('./db.js');
-const FileModel = require('./models/file');
+const FileModel = require('./models/file');  // 경로 수정
 
 const app = express();
 const PORT = 3000;
