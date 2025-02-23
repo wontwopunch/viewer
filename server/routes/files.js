@@ -21,22 +21,30 @@ router.get('/', async (req, res) => {
 
 router.get('/:fileId', async (req, res) => {
     try {
-        // SVS 파일 경로
+        console.log('파일 정보 요청:', req.params.fileId);
+        
         const filePath = path.join(__dirname, '../../uploads', req.params.fileId);
+        console.log('파일 경로:', filePath);
         
         if (!fs.existsSync(filePath)) {
+            console.log('파일 없음:', filePath);
             return res.status(404).json({ error: "파일을 찾을 수 없습니다." });
         }
 
-        // Python 스크립트로 이미지 크기 가져오기
+        console.log('Python 스크립트 실행...');
         const pythonProcess = require('child_process').spawn('python3', [
             path.join(__dirname, '../utils/slide_processor.py'),
             filePath,
             'size-only'
         ]);
 
+        pythonProcess.stderr.on('data', (data) => {
+            console.error('Python 에러:', data.toString());
+        });
+
         let imageSize = null;
         pythonProcess.stdout.on('data', (data) => {
+            console.log('Python 출력:', data.toString());
             const output = data.toString();
             if (output.startsWith('IMAGE_SIZE:')) {
                 const [width, height] = output.split(':')[1].split(',').map(Number);
@@ -45,6 +53,7 @@ router.get('/:fileId', async (req, res) => {
         });
 
         pythonProcess.on('close', (code) => {
+            console.log('Python 프로세스 종료:', code);
             if (code !== 0 || !imageSize) {
                 return res.status(500).json({ error: "이미지 크기를 가져올 수 없습니다." });
             }
