@@ -4,11 +4,11 @@ const fs = require('fs');
 const router = express.Router();
 
 // 타일 요청 처리
-router.get('/:tileSource/tile_:level_:x_:y.jpg', async (req, res) => {
-    const { tileSource, level, x, y } = req.params;
-    console.log('타일 요청 파라미터:', { tileSource, level, x, y });
+router.get('/:tileSource/tile_:level_:x.jpg', (req, res) => {
+    const { tileSource, level, x } = req.params;
+    console.log('타일 요청 파라미터:', { tileSource, level, x });
 
-    const tilePath = path.join(__dirname, '../../tiles', tileSource, `tile_${level}_${x}_${y}.jpg`);
+    const tilePath = path.join(__dirname, '../../tiles', tileSource, `tile_${level}_${x}.jpg`);
     console.log('요청된 타일 경로:', tilePath);
 
     try {
