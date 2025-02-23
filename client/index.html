@@ -134,20 +134,23 @@
     </div>
 
     <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const fileId = urlParams.get("file");
-
         async function checkFileAccess() {
             try {
-                console.log('URL 파라미터:', fileId);
-                
+                // URL 파라미터를 함수 내부로 이동
+                const urlParams = new URLSearchParams(window.location.search);
+                const fileId = urlParams.get("file");
+                console.log('URL 파라미터 확인:', { search: window.location.search, fileId });
+
                 if (!fileId) {
                     console.log('파일 ID 없음');
                     return;
                 }
 
                 const response = await fetch(`/api/files/${fileId}`);
+                console.log('파일 접근 응답:', response);
+                
                 const file = await response.json();
+                console.log('파일 정보:', file);
 
                 if (file.error === "비공개" && !file.isAdmin) {
                     alert("이 파일은 비공개 상태입니다.");
@@ -155,13 +158,13 @@
                 }
 
                 loadViewer(fileId);
-                fetchMemos();
+                fetchMemos(fileId);
             } catch (error) {
                 console.error("파일 접근 확인 중 오류:", error);
             }
         }
 
-        async function fetchMemos() {
+        async function fetchMemos(fileId) {
             if (!fileId) return;
             const response = await fetch(`/api/memos/${fileId}`);
             const memos = await response.json();
@@ -176,7 +179,7 @@
             });
         }
 
-        async function addMemo() {
+        async function addMemo(fileId) {
             if (!fileId) return;
             const memoInput = document.getElementById("memo-input").value;
             await fetch(`/api/memos/${fileId}`, {
@@ -185,7 +188,7 @@
                 body: JSON.stringify({ content: memoInput })
             });
             document.getElementById("memo-input").value = "";
-            fetchMemos();
+            fetchMemos(fileId);
         }
 
         async function uploadFile() {
@@ -218,10 +221,12 @@
             xhr.onload = function () {
                 try {
                     const response = JSON.parse(xhr.responseText);
+                    console.log('업로드 응답:', response);
 
                     if (xhr.status === 200) {
                         alert("파일 업로드 완료!");
                         progressContainer.style.display = "none";
+                        console.log('리다이렉트 URL:', `/index.html?file=${response.tileSource}`);
                         window.location.href = `/index.html?file=${response.tileSource}`;
                     } else {
                         console.error("서버 오류:", response);
