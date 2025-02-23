@@ -93,6 +93,10 @@ app.post('/upload', upload.single('svsFile'), async (req, res) => {
         const existingFile = await FileModel.findOne({ path: req.file.filename });
         if (existingFile) {
             console.log('이미 존재하는 파일:', existingFile);
+            // 이미지 크기 가져오기
+            const filePath = path.join(__dirname, '../uploads', existingFile.path);
+            const imageSize = await generateTiles(filePath, path.join(__dirname, '../tiles', existingFile.path));
+            
             return res.json({ 
                 tileSource: existingFile.path,
                 width: imageSize.width,
