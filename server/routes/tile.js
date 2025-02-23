@@ -6,9 +6,9 @@ const router = express.Router();
 // 타일 요청 처리
 router.get('/:tileSource/tile_:level_:x_:y.jpg', (req, res) => {
     const { tileSource, level, x, y } = req.params;
-    console.log('원본 타일 요청 파라미터:', { tileSource, level, x, y });
+    console.log('타일 요청:', { tileSource, level, x, y });
 
-    // 경로 파라미터 파싱
+    // 파라미터 파싱
     const params = {
         level: parseInt(level),
         x: parseInt(x),
@@ -22,8 +22,8 @@ router.get('/:tileSource/tile_:level_:x_:y.jpg', (req, res) => {
     }
 
     // 타일 파일 경로
-    const tilePath = path.join(__dirname, '../../tiles', tileSource, `tile_${params.level}_${params.x}_${params.y}.jpg`);
-    console.log('찾는 타일 경로:', tilePath);
+    const tilePath = path.join(__dirname, '../../tiles', tileSource, `tile_0_${params.x}_${params.y}.jpg`);
+    console.log('타일 경로:', tilePath);
 
     try {
         if (fs.existsSync(tilePath)) {
@@ -32,8 +32,10 @@ router.get('/:tileSource/tile_:level_:x_:y.jpg', (req, res) => {
             // 디버깅용 디렉토리 내용 출력
             const tileDir = path.dirname(tilePath);
             if (fs.existsSync(tileDir)) {
-                const files = fs.readdirSync(tileDir).slice(0, 5);
-                console.log('디렉토리 내 타일 예시:', files);
+                const files = fs.readdirSync(tileDir)
+                    .filter(f => f.startsWith('tile_0_'))
+                    .slice(0, 5);
+                console.log('사용 가능한 타일 예시:', files);
             }
             res.status(404).send('Tile not found');
         }
