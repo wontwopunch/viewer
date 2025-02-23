@@ -6,10 +6,7 @@ const connectionString = 'mongodb+srv://doadmin:5WhxJ7z63820M1qs@db-mongodb-sgp1
 // MongoDB 연결 함수
 const connectDB = async () => {
     try {
-        await mongoose.connect(connectionString, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true
-        });
+        await mongoose.connect(connectionString);
         console.log('MongoDB connected successfully');
     } catch (error) {
         console.error('MongoDB 연결 오류:', error);

@@ -269,10 +269,11 @@
                         minLevel: 0,
                         maxLevel: 10,
                         getTileUrl: function(level, x, y) {
-                            if (typeof x === 'undefined' || typeof y === 'undefined') {
+                            if (typeof level === 'undefined' || typeof x === 'undefined' || typeof y === 'undefined') {
+                                console.log('Invalid tile coordinates:', {level, x, y});
                                 return '';
                             }
-                            return `/tiles/${fileId}/tile_0_${x}_${y}.jpg`;
+                            return `/tiles/${fileId}/tile_${level}_${x}_${y}.jpg`;
                         }
                     },
                     showNavigator: true,

@@ -8,7 +8,12 @@ router.get('/:tileSource/tile_:level_:x_:y.jpg', (req, res) => {
     const { tileSource, level, x, y } = req.params;
     console.log('타일 요청 파라미터:', { tileSource, level, x, y });
 
-    // 타일 파일 경로 구성
+    // 모든 파라미터가 유효한지 확인
+    if (!tileSource || !level || !x || !y) {
+        console.log('잘못된 타일 요청 파라미터');
+        return res.status(400).send('Invalid tile parameters');
+    }
+
     const tilePath = path.join(__dirname, '../../tiles', tileSource, `tile_${level}_${x}_${y}.jpg`);
     console.log('요청된 타일 경로:', tilePath);
 
@@ -16,7 +21,7 @@ router.get('/:tileSource/tile_:level_:x_:y.jpg', (req, res) => {
         if (fs.existsSync(tilePath)) {
             res.sendFile(tilePath);
         } else {
-            // 디버깅을 위한 디렉토리 내용 출력
+            // 디버깅을 위한 디렉토리 내용 출력 (첫 10개만)
             const tileDir = path.dirname(tilePath);
             if (fs.existsSync(tileDir)) {
                 const files = fs.readdirSync(tileDir);
