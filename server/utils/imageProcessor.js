@@ -1,4 +1,4 @@
-const OpenSlide = require('openslide-js');
+const openslide = require('openslide');
 const path = require('path');
 const fs = require('fs');
 
@@ -17,10 +17,11 @@ async function generateTiles(inputPath, outputDir, tileSize = 256) {
         }
 
         // OpenSlide로 SVS 파일 로드
-        const slide = await OpenSlide.open(inputPath);
+        const slide = openslide.OpenSlide(inputPath);
         
         // 레벨 0(최고 해상도) 크기 가져오기
-        const [width, height] = slide.getDimensions(0);
+        const width = parseInt(slide.properties['openslide.level[0].width']);
+        const height = parseInt(slide.properties['openslide.level[0].height']);
         console.log(`🖼 원본 이미지 크기: ${width} x ${height}`);
 
         // 출력 디렉토리 생성
@@ -38,7 +39,7 @@ async function generateTiles(inputPath, outputDir, tileSize = 256) {
                 console.log(`🖼 타일 생성: ${tilePath}`);
 
                 // 타일 추출
-                const tileData = await slide.read(x, y, tileWidth, tileHeight);
+                const tileData = slide.read(x, y, tileWidth, tileHeight);
                 
                 // JPEG로 저장
                 fs.writeFileSync(tilePath, tileData);
