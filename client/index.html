@@ -277,7 +277,7 @@
                             const tileX = Math.floor(x);
                             const tileY = Math.floor(y);
 
-                            // URL 생성
+                            // URL 생성 (x_y 형식)
                             const url = `/tiles/${fileId}/tile_${tileX}_${tileY}.jpg`;
                             console.log('Requesting tile:', {x: tileX, y: tileY, url});
                             return url;
@@ -287,7 +287,8 @@
                     navigatorPosition: "BOTTOM_RIGHT",
                     maxZoomPixelRatio: 2,
                     defaultZoomLevel: 0,
-                    visibilityRatio: 1
+                    visibilityRatio: 1,
+                    minZoomLevel: 0.1
                 });
             } catch (error) {
                 console.error("뷰어 초기화 중 오류:", error);

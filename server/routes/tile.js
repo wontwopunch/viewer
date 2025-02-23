@@ -4,34 +4,22 @@ const fs = require('fs');
 const router = express.Router();
 
 // 타일 요청 처리
-router.get('/:tileSource/tile_:x_:y.jpg', (req, res) => {
-    const { tileSource, x, y } = req.params;
-    console.log('타일 요청:', { tileSource, x, y });
+router.get('/:tileSource/tile_:coords.jpg', (req, res) => {
+    const { tileSource, coords } = req.params;
+    console.log('타일 요청:', { tileSource, coords });
 
-    // 좌표 파싱
-    let coords = { x: 0, y: 0 };
-    
     try {
-        // x_y 형식으로 들어오는 경우
-        if (y.includes('_')) {
-            const [yX, yY] = y.split('_').map(Number);
-            coords = { x: yX, y: yY };
-        } else {
-            // 정상적인 x, y 파라미터인 경우
-            coords = {
-                x: parseInt(x),
-                y: parseInt(y)
-            };
-        }
-
+        // 좌표 파싱 (x_y 형식)
+        const [x, y] = coords.split('_').map(Number);
+        
         // 좌표 유효성 검사
-        if (isNaN(coords.x) || isNaN(coords.y)) {
-            console.error('잘못된 좌표:', coords);
+        if (isNaN(x) || isNaN(y)) {
+            console.error('잘못된 좌표:', { x, y });
             return res.status(400).send('Invalid coordinates');
         }
 
         // 타일 파일 경로
-        const tilePath = path.join(__dirname, '../../tiles', tileSource, `tile_0_${coords.x}_${coords.y}.jpg`);
+        const tilePath = path.join(__dirname, '../../tiles', tileSource, `tile_0_${x}_${y}.jpg`);
         console.log('타일 경로:', tilePath);
 
         if (fs.existsSync(tilePath)) {
