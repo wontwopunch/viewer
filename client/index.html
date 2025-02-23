@@ -274,11 +274,12 @@
                             }
 
                             // 좌표를 정수로 변환
-                            const coords = `${Math.floor(x)}_${Math.floor(y)}`;
+                            const tileX = Math.floor(x * 256); // 타일 크기(256)를 곱함
+                            const tileY = Math.floor(y * 256);
 
                             // URL 생성
-                            const url = `/tiles/${fileId}/tile_${coords}.jpg`;
-                            console.log('Requesting tile:', {coords, url});
+                            const url = `/tiles/${fileId}/tile_${tileX}_${tileY}.jpg`;
+                            console.log('Requesting tile:', {x: tileX, y: tileY, url});
                             return url;
                         }
                     },
