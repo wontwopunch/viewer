@@ -139,8 +139,10 @@
 
         async function checkFileAccess() {
             try {
+                console.log('URL 파라미터:', fileId);
+                
                 if (!fileId) {
-                    console.warn("⚠️ 파일 ID가 없습니다. 기본 안내 메시지 표시");
+                    console.log('파일 ID 없음');
                     return;
                 }
 
@@ -155,7 +157,7 @@
                 loadViewer(fileId);
                 fetchMemos();
             } catch (error) {
-                console.error("❌ 파일 정보를 불러오지 못했습니다:", error);
+                console.error("파일 접근 확인 중 오류:", error);
             }
         }
 
@@ -240,15 +242,23 @@
 
         async function loadViewer(fileId) {
             try {
+                console.log('파일 ID:', fileId);
                 const response = await fetch(`/api/files/${fileId}`);
+                console.log('API 응답:', response);
+                
+                if (!response.ok) {
+                    throw new Error(`API 오류: ${response.status}`);
+                }
+                
                 const file = await response.json();
+                console.log('파일 정보:', file);
 
                 OpenSeadragon({
                     id: "openseadragon",
                     prefixUrl: "https://cdnjs.cloudflare.com/ajax/libs/openseadragon/2.4.2/images/",
                     tileSources: {
-                        height: file.height,  // 서버에서 받은 실제 크기
-                        width: file.width,    // 서버에서 받은 실제 크기
+                        height: file.height,
+                        width: file.width,
                         tileSize: 256,
                         getTileUrl: function(level, x, y) {
                             return `/tiles/${fileId}/tile_${x}_${y}.jpg`;
