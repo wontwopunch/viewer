@@ -262,24 +262,35 @@
                 OpenSeadragon({
                     id: "openseadragon",
                     prefixUrl: "https://cdnjs.cloudflare.com/ajax/libs/openseadragon/2.4.2/images/",
+                    debugMode: true,
+                    showDebugInfo: true,
+                    debugGridColor: '#437AB2',
                     tileSources: {
                         height: file.height,
                         width: file.width,
                         tileSize: 256,
                         getTileUrl: function(level, x, y) {
+                            // 디버그 로그 추가
+                            console.log('OpenSeadragon requesting tile:', {
+                                level: level,
+                                x: x,
+                                y: y
+                            });
+
                             // 좌표 검증
                             if (x === undefined || y === undefined) {
                                 console.warn('Invalid coordinates:', {x, y});
                                 return '';
                             }
 
-                            // 좌표를 정수로 변환
-                            const tileX = Math.floor(x * 256); // 타일 크기(256)를 곱함
-                            const tileY = Math.floor(y * 256);
+                            // 좌표를 정수로 변환 (256을 곱하지 않음)
+                            const coords = {
+                                x: Math.floor(x),
+                                y: Math.floor(y)
+                            };
 
-                            // URL 생성 (x와 y를 하나의 coords 파라미터로)
-                            const url = `/tiles/${fileId}/tile_${tileX}_${tileY}.jpg`;
-                            console.log('Requesting tile:', {x: tileX, y: tileY, url});
+                            const url = `/tiles/${fileId}/tile_0_${coords.x}_${coords.y}.jpg`;
+                            console.log('Generated URL:', url);
                             return url;
                         }
                     },
@@ -290,7 +301,6 @@
                     visibilityRatio: 1,
                     minZoomLevel: 0.1,
                     maxZoomLevel: 10,
-                    // 추가 설정
                     immediateRender: true,
                     wrapHorizontal: false,
                     wrapVertical: false,

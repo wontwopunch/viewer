@@ -10,7 +10,10 @@ router.get('/:tileSource/tile_:coords.jpg', (req, res) => {
 
     try {
         // 좌표 파싱 (x_y 형식)
-        const [x, y] = coords.split('_').map(Number);
+        const [x, y] = coords.split('_').map(str => parseInt(str, 10));
+        
+        // 디버그 정보 출력
+        console.log('파싱된 좌표:', { x, y });
 
         // 좌표 유효성 검사
         if (isNaN(x) || isNaN(y)) {
@@ -23,15 +26,18 @@ router.get('/:tileSource/tile_:coords.jpg', (req, res) => {
         console.log('찾는 타일:', tilePath);
 
         if (fs.existsSync(tilePath)) {
+            // 타일 찾음
+            console.log('타일 찾음:', tilePath);
             res.sendFile(tilePath);
         } else {
-            // 디버깅용 디렉토리 내용 출력
+            // 디렉토리 내용 확인
             const tileDir = path.dirname(tilePath);
             if (fs.existsSync(tileDir)) {
                 const files = fs.readdirSync(tileDir)
                     .filter(f => f.startsWith('tile_'))
                     .slice(0, 5);
-                console.log('사용 가능한 타일:', files);
+                console.log('디렉토리 내 타일 예시:', files);
+                console.log('요청된 타일 없음:', path.basename(tilePath));
             }
             res.status(404).send('Tile not found');
         }
