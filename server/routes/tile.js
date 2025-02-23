@@ -9,18 +9,18 @@ router.get('/:tileSource/tile_:coords.jpg', (req, res) => {
     console.log('타일 요청:', { tileSource, coords });
 
     try {
-        // 좌표 파싱 (x_y 형식)
+        // 좌표 파싱
         const [x, y] = coords.split('_').map(Number);
         
         // 좌표 유효성 검사
         if (isNaN(x) || isNaN(y)) {
-            console.error('잘못된 좌표:', { x, y });
+            console.error('잘못된 좌표:', coords);
             return res.status(400).send('Invalid coordinates');
         }
 
         // 타일 파일 경로
         const tilePath = path.join(__dirname, '../../tiles', tileSource, `tile_0_${x}_${y}.jpg`);
-        console.log('타일 경로:', tilePath);
+        console.log('찾는 타일:', tilePath);
 
         if (fs.existsSync(tilePath)) {
             res.sendFile(tilePath);
@@ -31,7 +31,7 @@ router.get('/:tileSource/tile_:coords.jpg', (req, res) => {
                 const files = fs.readdirSync(tileDir)
                     .filter(f => f.startsWith('tile_0_'))
                     .slice(0, 5);
-                console.log('사용 가능한 타일 예시:', files);
+                console.log('사용 가능한 타일:', files);
             }
             res.status(404).send('Tile not found');
         }

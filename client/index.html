@@ -274,12 +274,11 @@
                             }
 
                             // 좌표를 정수로 변환
-                            const tileX = Math.floor(x);
-                            const tileY = Math.floor(y);
+                            const coords = `${Math.floor(x)}_${Math.floor(y)}`;
 
-                            // URL 생성 (x_y 형식)
-                            const url = `/tiles/${fileId}/tile_${tileX}_${tileY}.jpg`;
-                            console.log('Requesting tile:', {x: tileX, y: tileY, url});
+                            // URL 생성
+                            const url = `/tiles/${fileId}/tile_${coords}.jpg`;
+                            console.log('Requesting tile:', {coords, url});
                             return url;
                         }
                     },
@@ -288,7 +287,8 @@
                     maxZoomPixelRatio: 2,
                     defaultZoomLevel: 0,
                     visibilityRatio: 1,
-                    minZoomLevel: 0.1
+                    minZoomLevel: 0.1,
+                    maxZoomLevel: 10
                 });
             } catch (error) {
                 console.error("뷰어 초기화 중 오류:", error);

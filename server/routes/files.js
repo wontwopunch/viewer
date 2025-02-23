@@ -86,4 +86,31 @@ router.post('/:id/toggle', async (req, res) => {
     res.json({ message: "파일 공개 상태가 변경되었습니다.", file });
 });
 
+// 파일 삭제 엔드포인트
+router.delete('/:fileId', async (req, res) => {
+    try {
+        const fileId = req.params.fileId;
+        
+        // DB에서 파일 정보 삭제
+        await FileModel.deleteOne({ id: fileId });
+        
+        // 실제 파일과 타일 디렉토리도 삭제
+        const uploadPath = path.join(__dirname, '../../uploads', fileId);
+        const tilePath = path.join(__dirname, '../../tiles', fileId);
+        
+        if (fs.existsSync(uploadPath)) {
+            fs.unlinkSync(uploadPath);
+        }
+        
+        if (fs.existsSync(tilePath)) {
+            fs.rmdirSync(tilePath, { recursive: true });
+        }
+        
+        res.json({ message: '파일이 성공적으로 삭제되었습니다.' });
+    } catch (error) {
+        console.error('파일 삭제 중 오류:', error);
+        res.status(500).json({ error: '파일 삭제 중 오류가 발생했습니다.' });
+    }
+});
+
 module.exports = router;
