@@ -97,7 +97,7 @@ app.post('/upload', upload.single('svsFile'), async (req, res) => {
 
         console.log(`🔹 업로드된 파일: ${filePath}`);
 
-        // 🚀 OpenCV로 타일 생성
+        // 🚀 vips로 타일 생성
         await generateTiles(filePath, outputDir);
         res.json({ tileSource: req.file.filename });
 

@@ -1,4 +1,4 @@
-const cv = require('opencv4nodejs');
+const vips = require('vips');
 const path = require('path');
 const fs = require('fs');
 
@@ -16,15 +16,18 @@ async function generateTiles(inputPath, outputDir, tileSize = 256) {
             throw new Error(`❌ 입력 파일이 존재하지 않습니다: ${inputPath}`);
         }
 
-        // OpenCV로 이미지 읽기
-        let image = cv.imread(inputPath);
+        // vips로 이미지 로드
+        let image = vips.Image.newFromFile(inputPath);
 
-        console.log(`🖼 원본 이미지 크기: ${image.cols} x ${image.rows}`);
+        console.log(`🖼 원본 이미지 크기: ${image.width} x ${image.height}`);
 
         // 🚀 픽셀 제한 해제 (1억 픽셀 이상일 경우 자동 리사이징)
-        if (image.cols * image.rows > 100000000) {  
+        if (image.width * image.height > 100000000) {
             console.log("⚠️ 이미지 크기가 너무 큽니다. 자동 리사이징 적용...");
-            image = image.resizeToMax(10000);  // 최대 10,000px로 조정
+            const scale = 10000 / Math.max(image.width, image.height);
+            image = image.resize(scale, {
+                kernel: vips.Kernel.lanczos3
+            });
         }
 
         // 출력 디렉토리 생성
@@ -33,17 +36,22 @@ async function generateTiles(inputPath, outputDir, tileSize = 256) {
         }
 
         console.log("🔄 타일 생성 중...");
-        for (let x = 0; x < image.cols; x += tileSize) {
-            for (let y = 0; y < image.rows; y += tileSize) {
-                const tileWidth = Math.min(tileSize, image.cols - x);
-                const tileHeight = Math.min(tileSize, image.rows - y);
+        for (let x = 0; x < image.width; x += tileSize) {
+            for (let y = 0; y < image.height; y += tileSize) {
+                const tileWidth = Math.min(tileSize, image.width - x);
+                const tileHeight = Math.min(tileSize, image.height - y);
                 const tilePath = path.join(outputDir, `tile_${x}_${y}.jpg`);
 
                 console.log(`🖼 타일 생성: ${tilePath}`);
 
-                // OpenCV로 이미지 타일 추출
-                const tile = image.getRegion(new cv.Rect(x, y, tileWidth, tileHeight));
-                cv.imwrite(tilePath, tile);
+                // vips로 이미지 타일 추출
+                const tile = image.extract(x, y, tileWidth, tileHeight);
+                
+                // JPEG 품질 설정과 함께 저장
+                await tile.writeToFile(tilePath, {
+                    Q: 90,  // JPEG 품질 (0-100)
+                    strip: true  // 메타데이터 제거
+                });
             }
         }
 
