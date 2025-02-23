@@ -277,16 +277,26 @@
                             
                             // 좌표가 유효한지 확인
                             if (level === undefined || x === undefined || y === undefined) {
+                                console.log('Invalid coordinates:', {level, x, y});
                                 return '';
                             }
 
+                            // URL에서 사용할 좌표 계산
+                            const tileLevel = Math.floor(level);
+                            const tileX = Math.floor(x);
+                            const tileY = Math.floor(y);
+
                             // 실제 레벨은 역순으로 (최대 레벨에서 빼기)
-                            const actualLevel = this.maxLevel - level;
-                            return `/tiles/${fileId}/tile_${actualLevel}_${x}_${y}.jpg`;
+                            const actualLevel = this.maxLevel - tileLevel;
+                            
+                            const url = `/tiles/${fileId}/tile_${actualLevel}_${tileX}_${tileY}.jpg`;
+                            console.log('Generated URL:', url);
+                            return url;
                         }
                     },
                     showNavigator: true,
-                    navigatorPosition: "BOTTOM_RIGHT"
+                    navigatorPosition: "BOTTOM_RIGHT",
+                    debugMode: true  // 디버깅 모드 활성화
                 });
             } catch (error) {
                 console.error("뷰어 초기화 중 오류:", error);
