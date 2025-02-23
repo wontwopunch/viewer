@@ -5,6 +5,16 @@ const path = require('path');
 const fs = require('fs');
 const FileModel = require('../models/file');  // 모델 임포트
 
+// 디버그용 파일 목록 조회 API
+router.get('/debug', async (req, res) => {
+    try {
+        const files = await FileModel.find();
+        res.json(files);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // 파일 목록 조회 API
 router.get('/', async (req, res) => {
     const files = await FileModel.find();

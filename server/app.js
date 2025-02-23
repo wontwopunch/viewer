@@ -89,6 +89,17 @@ app.post('/upload', upload.single('svsFile'), async (req, res) => {
     }
 
     try {
+        // 이미 존재하는 파일인지 확인
+        const existingFile = await FileModel.findOne({ path: req.file.filename });
+        if (existingFile) {
+            console.log('이미 존재하는 파일:', existingFile);
+            return res.json({ 
+                tileSource: existingFile.path,
+                width: imageSize.width,
+                height: imageSize.height
+            });
+        }
+
         const filePath = path.join(__dirname, '../uploads', req.file.filename);
         const outputDir = path.join(__dirname, '../tiles', req.file.filename);
 
@@ -121,6 +132,16 @@ app.post('/upload', upload.single('svsFile'), async (req, res) => {
     } catch (error) {
         console.error('파일 처리 오류:', error);
         res.status(500).json({ error: '파일 처리 중 오류가 발생했습니다.', details: error.message });
+    }
+});
+
+// 파일 목록 확인 API 추가
+app.get('/api/debug/files', async (req, res) => {
+    try {
+        const files = await FileModel.find();
+        res.json(files);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 });
 
