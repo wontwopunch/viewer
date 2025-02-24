@@ -276,7 +276,6 @@
                         height: file.height,
                         width: file.width,
                         getTileUrl: function(level, x, y) {
-                            // 타일 URL 생성
                             const url = `/tiles/${fileId}/tile_${x}_${y}.jpg`;
                             console.log('타일 요청:', { level, x, y, url });
                             return url;
@@ -293,7 +292,30 @@
                         flickEnabled: true,
                         flickMinSpeed: 120,
                         flickMomentum: 0.25
-                    }
+                    },
+                    minZoomImageRatio: 0.8,
+                    immediateRender: false,
+                    blendTime: 0.1,
+                    alwaysBlend: false,
+                    minPixelRatio: 0.5,
+                    smoothTileEdgesMinZoom: 1.0,
+                    ajaxWithCredentials: false,
+                    loadTilesWithAjax: true,
+                    maxImageCacheCount: 200,
+                    timeout: 30000,
+                    imageLoaderLimit: 4,
+                    maxTilesPerFrame: 2,
+                    placeholderFillStyle: "#F8F8F8",
+                    wrapHorizontal: false,
+                    wrapVertical: false
+                });
+
+                viewer.addHandler('tile-loaded', function(event) {
+                    console.log('타일 로드 완료:', event.tile.url);
+                });
+
+                viewer.addHandler('tile-load-failed', function(event) {
+                    console.error('타일 로드 실패:', event.tile.url, event.message);
                 });
             } catch (error) {
                 console.error("뷰어 초기화 중 오류:", error);
