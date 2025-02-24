@@ -22,6 +22,8 @@ const fileSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     }
+}, {
+    collection: 'files'  // 컬렉션 이름을 명시적으로 지정
 });
 
 module.exports = mongoose.model('File', fileSchema); 
