@@ -43,6 +43,7 @@ def generate_tile(input_path, output_dir, x, y, tile_size=256):
         os.makedirs(output_dir, exist_ok=True)
         tile_path = os.path.join(output_dir, f'tile_{x}_{y}.jpg')
         tile.save(tile_path, 'JPEG', quality=90)
+        print(f"✅ 타일 생성 완료: {tile_path}")
         
         slide.close()
         return True
@@ -52,21 +53,28 @@ def generate_tile(input_path, output_dir, x, y, tile_size=256):
         return False
 
 if __name__ == "__main__":
+    # 첫 번째 인자는 항상 input_path
     if len(sys.argv) < 3:
-        print("Usage: python slide_processor.py <input_path> <output_dir|size-only> [x y]")
+        print("Usage:")
+        print("  이미지 크기 확인: python slide_processor.py <input_path> size-only")
+        print("  타일 생성: python slide_processor.py <input_path> <output_dir> <x> <y>")
         sys.exit(1)
-    
+
     input_path = sys.argv[1]
-    mode = sys.argv[2]
-    
-    if mode == 'size-only':
+    command = sys.argv[2]
+
+    if command == 'size-only':
+        # 이미지 크기 확인 모드
         success = get_image_size(input_path)
     else:
-        if len(sys.argv) < 5:
-            print("Usage: python slide_processor.py <input_path> <output_dir> <x> <y>")
+        # 타일 생성 모드
+        if len(sys.argv) != 5:
+            print("타일 생성 사용법: python slide_processor.py <input_path> <output_dir> <x> <y>")
             sys.exit(1)
+        
+        output_dir = command  # 두 번째 인자가 output_dir
         x = int(sys.argv[3])
         y = int(sys.argv[4])
-        success = generate_tile(input_path, mode, x, y)
-    
+        success = generate_tile(input_path, output_dir, x, y)
+
     sys.exit(0 if success else 1)
