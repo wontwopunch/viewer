@@ -1,18 +1,17 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const { spawn } = require('child_process');
 const router = express.Router();
 
 // 타일 요청 처리
-router.get('/:tileSource/tile_:coords.jpg', (req, res) => {
+router.get('/:tileSource/tile_:coords.jpg', async (req, res) => {
     const { tileSource, coords } = req.params;
     console.log('타일 요청:', { tileSource, coords });
 
     try {
-        // 좌표 파싱 (x_y 형식)
+        // 좌표 파싱
         const [x, y] = coords.split('_').map(str => parseInt(str, 10));
-        
-        // 디버그 정보 출력
         console.log('파싱된 좌표:', { x, y });
 
         // 좌표 유효성 검사
@@ -23,24 +22,32 @@ router.get('/:tileSource/tile_:coords.jpg', (req, res) => {
 
         // 타일 파일 경로
         const tilePath = path.join(__dirname, '../../tiles', tileSource, `tile_${x}_${y}.jpg`);
-        console.log('찾는 타일:', tilePath);
 
+        // 타일이 이미 존재하면 바로 전송
         if (fs.existsSync(tilePath)) {
-            // 타일 찾음
-            console.log('타일 찾음:', tilePath);
-            res.sendFile(tilePath);
-        } else {
-            // 디렉토리 내용 확인
-            const tileDir = path.dirname(tilePath);
-            if (fs.existsSync(tileDir)) {
-                const files = fs.readdirSync(tileDir)
-                    .filter(f => f.startsWith('tile_'))
-                    .slice(0, 5);
-                console.log('디렉토리 내 타일 예시:', files);
-                console.log('요청된 타일 없음:', path.basename(tilePath));
-            }
-            res.status(404).send('Tile not found');
+            return res.sendFile(tilePath);
         }
+
+        // 타일이 없으면 생성
+        const inputPath = path.join(__dirname, '../../uploads', tileSource);
+        const outputDir = path.dirname(tilePath);
+
+        const pythonProcess = spawn('python3', [
+            path.join(__dirname, '../utils/slide_processor.py'),
+            inputPath,
+            outputDir,
+            x.toString(),
+            y.toString()
+        ]);
+
+        pythonProcess.on('close', (code) => {
+            if (code === 0 && fs.existsSync(tilePath)) {
+                res.sendFile(tilePath);
+            } else {
+                res.status(404).send('Tile generation failed');
+            }
+        });
+
     } catch (error) {
         console.error('타일 처리 오류:', error);
         res.status(500).send('Error processing tile request');
