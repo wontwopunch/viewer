@@ -50,12 +50,30 @@ router.get('/:fileId', async (req, res) => {
 
         let imageSize = null;
         pythonProcess.stdout.on('data', (data) => {
-            console.log('Python 출력:', data.toString());
-            const output = data.toString();
-            if (output.startsWith('IMAGE_SIZE:')) {
-                const [width, height] = output.split(':')[1].trim().split(',').map(Number);
-                console.log('파싱된 이미지 크기:', { width, height });
-                imageSize = { width, height };
+            try {
+                const output = data.toString().trim();
+                console.log('Python 출력 (raw):', output);
+                
+                if (output.startsWith('IMAGE_SIZE:')) {
+                    const sizeStr = output.split(':')[1];
+                    console.log('크기 문자열:', sizeStr);
+                    
+                    const [widthStr, heightStr] = sizeStr.split(',');
+                    console.log('분리된 값:', { widthStr, heightStr });
+                    
+                    const width = parseInt(widthStr.trim(), 10);
+                    const height = parseInt(heightStr.trim(), 10);
+                    console.log('파싱된 값:', { width, height });
+                    
+                    if (!isNaN(width) && !isNaN(height)) {
+                        imageSize = { width, height };
+                        console.log('이미지 크기 설정:', imageSize);
+                    } else {
+                        console.error('잘못된 이미지 크기:', { widthStr, heightStr });
+                    }
+                }
+            } catch (error) {
+                console.error('이미지 크기 파싱 오류:', error);
             }
         });
 

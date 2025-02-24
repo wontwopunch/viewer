@@ -7,7 +7,9 @@ def get_image_size(input_path):
     try:
         slide = openslide.OpenSlide(input_path)
         width, height = slide.dimensions
-        print(f"IMAGE_SIZE:{width},{height}")
+        # 출력 형식 통일 및 공백 제거
+        size_str = f"IMAGE_SIZE:{width},{height}\n"
+        print(size_str.strip())
         slide.close()
         return True
     except Exception as e:
@@ -38,8 +40,12 @@ def generate_tiles(input_path, output_dir, tile_size=256):
                 tile = slide.read_region((x, y), 0, (tile_width, tile_height))
                 tile = tile.convert('RGB')
                 
+                # 타일 인덱스 계산 (256으로 나눈 값)
+                tile_x = x // tile_size
+                tile_y = y // tile_size
+                
                 # 저장
-                tile_path = os.path.join(output_dir, f'tile_{x}_{y}.jpg')
+                tile_path = os.path.join(output_dir, f'tile_{tile_x}_{tile_y}.jpg')
                 tile.save(tile_path, 'JPEG', quality=90)
                 print(f"🖼 타일 생성: {tile_path}")
         
