@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const path = require('path');
 const fs = require('fs');
 const FileModel = require('../models/file');  // 모델 임포트
+const { generateTiles } = require('../utils/imageProcessor');
 
 // 디버그용 파일 목록 조회 API
 router.get('/debug', async (req, res) => {
@@ -40,53 +41,28 @@ router.get('/:fileId', async (req, res) => {
             });
         }
 
-        // Python 스크립트로 이미지 크기 확인
-        console.log('Python 스크립트 실행...');
-        const pythonProcess = require('child_process').spawn('python3', [
-            path.join(__dirname, '../utils/slide_processor.py'),
-            filePath,
-            'size-only'
-        ]);
-
-        let imageSize = null;
-        pythonProcess.stdout.on('data', (data) => {
-            try {
-                const output = data.toString().trim();
-                console.log('Python 출력 (raw):', output);
-                
-                if (output.startsWith('IMAGE_SIZE:')) {
-                    const sizeStr = output.split(':')[1];
-                    console.log('크기 문자열:', sizeStr);
-                    
-                    const [widthStr, heightStr] = sizeStr.split(',');
-                    console.log('분리된 값:', { widthStr, heightStr });
-                    
-                    const width = parseInt(widthStr.trim(), 10);
-                    const height = parseInt(heightStr.trim(), 10);
-                    console.log('파싱된 값:', { width, height });
-                    
-                    if (!isNaN(width) && !isNaN(height)) {
-                        imageSize = { width, height };
-                        console.log('이미지 크기 설정:', imageSize);
-                    } else {
-                        console.error('잘못된 이미지 크기:', { widthStr, heightStr });
-                    }
-                }
-            } catch (error) {
-                console.error('이미지 크기 파싱 오류:', error);
-            }
+        // 이미지 크기 확인
+        const imageSize = await generateTiles(filePath);
+        console.log('응답 데이터:', {
+            tileSource: req.params.fileId,
+            ...imageSize
         });
 
-        pythonProcess.on('close', (code) => {
-            console.log('Python 프로세스 종료:', code);
-            if (code === 0 && imageSize) {
-                res.json({
-                    id: req.params.fileId,
-                    ...imageSize
-                });
-            } else {
-                res.status(500).json({ error: "이미지 크기를 확인할 수 없습니다." });
-            }
+        // DB에 파일 정보 저장
+        await FileModel.findOneAndUpdate(
+            { id: req.params.fileId },
+            {
+                id: req.params.fileId,
+                width: imageSize.width,
+                height: imageSize.height,
+                uploadDate: new Date()
+            },
+            { upsert: true }
+        );
+
+        res.json({
+            id: req.params.fileId,
+            ...imageSize
         });
     } catch (error) {
         console.error('파일 정보 조회 오류:', error);

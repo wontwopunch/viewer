@@ -288,8 +288,9 @@
                                 y: Math.max(0, Math.floor(y))
                             };
 
+                            // 타일 URL 생성
                             const url = `/tiles/${fileId}/tile_${coords.x}_${coords.y}.jpg`;
-                            console.log('타일 URL 생성:', { level, x, y, coords, url });
+                            console.log('타일 요청:', { level, x, y, coords, url });
                             return url;
                         }
                     },
