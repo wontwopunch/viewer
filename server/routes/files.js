@@ -53,7 +53,8 @@ router.get('/:fileId', async (req, res) => {
             console.log('Python 출력:', data.toString());
             const output = data.toString();
             if (output.startsWith('IMAGE_SIZE:')) {
-                const [width, height] = output.split(':')[1].split(',').map(Number);
+                const [width, height] = output.split(':')[1].trim().split(',').map(Number);
+                console.log('파싱된 이미지 크기:', { width, height });
                 imageSize = { width, height };
             }
         });
