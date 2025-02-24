@@ -22,20 +22,26 @@ router.get('/:tileSource/tile_:coords.jpg', async (req, res) => {
 
         // 타일 파일 경로
         const tilePath = path.join(__dirname, '../../tiles', tileSource, `tile_${x}_${y}.jpg`);
+        const tileDir = path.dirname(tilePath);
+
+        // 타일 디렉토리가 없으면 생성
+        if (!fs.existsSync(tileDir)) {
+            fs.mkdirSync(tileDir, { recursive: true });
+        }
 
         // 타일이 이미 존재하면 바로 전송
         if (fs.existsSync(tilePath)) {
+            console.log('캐시된 타일 전송:', tilePath);
             return res.sendFile(tilePath);
         }
 
         // 타일이 없으면 생성
         const inputPath = path.join(__dirname, '../../uploads', tileSource);
-        const outputDir = path.dirname(tilePath);
-
+        
         console.log('타일 생성 시작:', {
             script: path.join(__dirname, '../utils/slide_processor.py'),
             inputPath,
-            outputDir,
+            tileDir,
             x,
             y
         });
@@ -43,25 +49,28 @@ router.get('/:tileSource/tile_:coords.jpg', async (req, res) => {
         const pythonProcess = spawn('python3', [
             path.join(__dirname, '../utils/slide_processor.py'),
             inputPath,
-            outputDir,
+            tileDir,
             x.toString(),
             y.toString()
         ]);
 
+        let pythonOutput = '';
+
         pythonProcess.stdout.on('data', (data) => {
-            console.log('Python 출력:', data.toString().trim());
+            pythonOutput += data.toString();
+            console.log('타일 생성 출력:', data.toString().trim());
         });
 
         pythonProcess.stderr.on('data', (data) => {
-            console.error('Python 오류:', data.toString().trim());
+            console.error('타일 생성 오류:', data.toString().trim());
         });
 
         pythonProcess.on('close', (code) => {
-            console.log('Python 프로세스 종료:', code);
+            console.log('타일 생성 완료:', { code, output: pythonOutput });
             if (code === 0 && fs.existsSync(tilePath)) {
                 res.sendFile(tilePath);
             } else {
-                res.status(404).send('Tile generation failed');
+                res.status(500).send('Tile generation failed');
             }
         });
 
