@@ -28,14 +28,14 @@ router.get('/:fileId', async (req, res) => {
         
         // 파일이 없는 경우 DB에서 정보 조회
         if (!fs.existsSync(filePath)) {
-            const fileInfo = await FileModel.findOne({ id: req.params.fileId });
+            const fileInfo = await FileModel.findOne({ fileId: req.params.fileId });
             if (!fileInfo) {
                 console.log('파일 없음:', filePath);
                 return res.status(404).json({ error: "파일을 찾을 수 없습니다." });
             }
             // DB에 정보가 있으면 해당 정보 반환
             return res.json({
-                id: fileInfo.id,
+                id: fileInfo.fileId,
                 width: fileInfo.width,
                 height: fileInfo.height
             });
@@ -50,9 +50,9 @@ router.get('/:fileId', async (req, res) => {
 
         // DB에 파일 정보 저장
         await FileModel.findOneAndUpdate(
-            { id: req.params.fileId },
+            { fileId: req.params.fileId },
             {
-                id: req.params.fileId,
+                fileId: req.params.fileId,
                 width: imageSize.width,
                 height: imageSize.height,
                 uploadDate: new Date()
@@ -93,7 +93,7 @@ router.delete('/:fileId', async (req, res) => {
         const fileId = req.params.fileId;
         
         // DB에서 파일 정보 삭제
-        await FileModel.deleteOne({ id: fileId });
+        await FileModel.deleteOne({ fileId: fileId });
         
         // 실제 파일과 타일 디렉토리도 삭제
         const uploadPath = path.join(__dirname, '../../uploads', fileId);
