@@ -32,6 +32,14 @@ router.get('/:tileSource/tile_:coords.jpg', async (req, res) => {
         const inputPath = path.join(__dirname, '../../uploads', tileSource);
         const outputDir = path.dirname(tilePath);
 
+        console.log('타일 생성 시작:', {
+            script: path.join(__dirname, '../utils/slide_processor.py'),
+            inputPath,
+            outputDir,
+            x,
+            y
+        });
+
         const pythonProcess = spawn('python3', [
             path.join(__dirname, '../utils/slide_processor.py'),
             inputPath,
@@ -40,7 +48,16 @@ router.get('/:tileSource/tile_:coords.jpg', async (req, res) => {
             y.toString()
         ]);
 
+        pythonProcess.stdout.on('data', (data) => {
+            console.log('Python 출력:', data.toString().trim());
+        });
+
+        pythonProcess.stderr.on('data', (data) => {
+            console.error('Python 오류:', data.toString().trim());
+        });
+
         pythonProcess.on('close', (code) => {
+            console.log('Python 프로세스 종료:', code);
             if (code === 0 && fs.existsSync(tilePath)) {
                 res.sendFile(tilePath);
             } else {
