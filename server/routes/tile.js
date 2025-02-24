@@ -1,51 +1,27 @@
 const express = require('express');
-const path = require('path');
-const fs = require('fs');
-const { spawn } = require('child_process');
 const router = express.Router();
+const path = require('path');
+const fs = require('fs').promises;
+const { spawn } = require('child_process');
 
-// 타일 요청 처리
-router.get('/:tileSource/tile_:coords.jpg', async (req, res) => {
-    const { tileSource, coords } = req.params;
-    console.log('타일 요청:', { tileSource, coords });
+// 타일 생성 큐와 진행 중인 작업 추적
+const tileQueue = new Map(); // 대기 중인 타일 요청
+const inProgress = new Map(); // 생성 중인 타일
 
+// 타일 생성 함수
+async function generateTile(inputPath, tileDir, x, y) {
+    const tileKey = `${x}_${y}`;
+    const tilePath = path.join(tileDir, `tile_${tileKey}.jpg`);
+
+    // 이미 생성된 타일이 있는지 확인
     try {
-        // 좌표 파싱
-        const [x, y] = coords.split('_').map(str => parseInt(str, 10));
-        console.log('파싱된 좌표:', { x, y });
+        await fs.access(tilePath);
+        return tilePath;
+    } catch (error) {
+        // 파일이 없으면 생성
+    }
 
-        // 좌표 유효성 검사
-        if (isNaN(x) || isNaN(y)) {
-            console.error('잘못된 좌표:', coords);
-            return res.status(400).send('Invalid coordinates');
-        }
-
-        // 타일 파일 경로
-        const tilePath = path.join(__dirname, '../../tiles', tileSource, `tile_${x}_${y}.jpg`);
-        const tileDir = path.dirname(tilePath);
-
-        // 타일 디렉토리가 없으면 생성
-        if (!fs.existsSync(tileDir)) {
-            fs.mkdirSync(tileDir, { recursive: true });
-        }
-
-        // 타일이 이미 존재하면 바로 전송
-        if (fs.existsSync(tilePath)) {
-            console.log('캐시된 타일 전송:', tilePath);
-            return res.sendFile(tilePath);
-        }
-
-        // 타일이 없으면 생성
-        const inputPath = path.join(__dirname, '../../uploads', tileSource);
-        
-        console.log('타일 생성 시작:', {
-            script: path.join(__dirname, '../utils/slide_processor.py'),
-            inputPath,
-            tileDir,
-            x,
-            y
-        });
-
+    return new Promise((resolve, reject) => {
         const pythonProcess = spawn('python3', [
             path.join(__dirname, '../utils/slide_processor.py'),
             inputPath,
@@ -54,29 +30,55 @@ router.get('/:tileSource/tile_:coords.jpg', async (req, res) => {
             y.toString()
         ]);
 
-        let pythonOutput = '';
-
-        pythonProcess.stdout.on('data', (data) => {
-            pythonOutput += data.toString();
-            console.log('타일 생성 출력:', data.toString().trim());
-        });
+        let errorOutput = '';
 
         pythonProcess.stderr.on('data', (data) => {
-            console.error('타일 생성 오류:', data.toString().trim());
+            errorOutput += data.toString();
         });
 
         pythonProcess.on('close', (code) => {
-            console.log('타일 생성 완료:', { code, output: pythonOutput });
-            if (code === 0 && fs.existsSync(tilePath)) {
-                res.sendFile(tilePath);
+            if (code === 0) {
+                resolve(tilePath);
             } else {
-                res.status(500).send('Tile generation failed');
+                reject(new Error(`타일 생성 실패: ${errorOutput}`));
             }
         });
+    });
+}
+
+router.get('/:fileId/tile_:x_:y.jpg', async (req, res) => {
+    try {
+        const { fileId } = req.params;
+        const x = parseInt(req.params.x);
+        const y = parseInt(req.params.y);
+        
+        const inputPath = path.join(__dirname, '../../uploads', fileId);
+        const tileDir = path.join(__dirname, '../../tiles', fileId);
+        const tileKey = `${fileId}_${x}_${y}`;
+
+        // 디렉토리 생성
+        await fs.mkdir(tileDir, { recursive: true });
+
+        // 이미 진행 중인 타일 생성이 있는지 확인
+        if (inProgress.has(tileKey)) {
+            const tilePath = await inProgress.get(tileKey);
+            return res.sendFile(tilePath);
+        }
+
+        // 새로운 타일 생성 작업 시작
+        const tilePromise = generateTile(inputPath, tileDir, x, y);
+        inProgress.set(tileKey, tilePromise);
+
+        try {
+            const tilePath = await tilePromise;
+            res.sendFile(tilePath);
+        } finally {
+            inProgress.delete(tileKey);
+        }
 
     } catch (error) {
         console.error('타일 처리 오류:', error);
-        res.status(500).send('Error processing tile request');
+        res.status(500).send('타일 생성 중 오류가 발생했습니다.');
     }
 });
 
