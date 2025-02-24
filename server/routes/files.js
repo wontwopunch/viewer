@@ -26,14 +26,9 @@ router.get('/:fileId', async (req, res) => {
     try {
         const filePath = path.join(__dirname, '../../uploads', req.params.fileId);
         
-        // 파일이 없는 경우 DB에서 정보 조회
-        if (!fs.existsSync(filePath)) {
-            const fileInfo = await FileModel.findOne({ fileId: req.params.fileId });
-            if (!fileInfo) {
-                console.log('파일 없음:', filePath);
-                return res.status(404).json({ error: "파일을 찾을 수 없습니다." });
-            }
-            // DB에 정보가 있으면 해당 정보 반환
+        // 먼저 DB에서 파일 정보 조회
+        const fileInfo = await FileModel.findOne({ fileId: req.params.fileId });
+        if (fileInfo) {
             return res.json({
                 id: fileInfo.fileId,
                 width: fileInfo.width,
@@ -41,14 +36,20 @@ router.get('/:fileId', async (req, res) => {
             });
         }
 
-        // 이미지 크기 확인
+        // DB에 없고 파일도 없는 경우
+        if (!fs.existsSync(filePath)) {
+            console.log('파일 없음:', filePath);
+            return res.status(404).json({ error: "파일을 찾을 수 없습니다." });
+        }
+
+        // 이미지 크기 확인 및 DB 저장
         const imageSize = await generateTiles(filePath);
         console.log('응답 데이터:', {
             tileSource: req.params.fileId,
             ...imageSize
         });
 
-        // DB에 파일 정보 저장 또는 업데이트
+        // DB에 파일 정보 저장
         await FileModel.findOneAndUpdate(
             { fileId: req.params.fileId },
             {

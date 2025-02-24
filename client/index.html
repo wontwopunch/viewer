@@ -259,7 +259,7 @@
                 const file = await response.json();
                 console.log('파일 정보:', file);
 
-                OpenSeadragon({
+                const viewer = OpenSeadragon({
                     id: "openseadragon",
                     prefixUrl: "https://cdnjs.cloudflare.com/ajax/libs/openseadragon/2.4.2/images/",
                     debugMode: true,
@@ -276,35 +276,13 @@
                         height: file.height,
                         width: file.width,
                         getTileUrl: function(level, x, y) {
-                            // 좌표 검증
-                            if (typeof x !== 'number' || typeof y !== 'number' || isNaN(x) || isNaN(y)) {
-                                console.warn('잘못된 좌표:', { level, x, y });
-                                return '';
-                            }
-
-                            // 좌표를 정수로 변환
-                            const coords = {
-                                x: Math.max(0, Math.floor(x)),
-                                y: Math.max(0, Math.floor(y))
-                            };
-
                             // 타일 URL 생성
-                            const url = `/tiles/${fileId}/tile_${coords.x}_${coords.y}.jpg`;
-                            console.log('타일 요청:', { level, x, y, coords, url });
+                            const url = `/tiles/${fileId}/tile_${x}_${y}.jpg`;
+                            console.log('타일 요청:', { level, x, y, url });
                             return url;
                         }
                     },
-                    showNavigator: true,
-                    navigatorPosition: "BOTTOM_RIGHT",
                     maxZoomPixelRatio: 2,
-                    defaultZoomLevel: 0,
-                    visibilityRatio: 0.5,
-                    minZoomLevel: 0.1,
-                    maxZoomLevel: 10,
-                    immediateRender: false,
-                    blendTime: 0.1,
-                    animationTime: 0.5,
-                    springStiffness: 6.5,
                     constrainDuringPan: true,
                     showRotationControl: true,
                     gestureSettingsMouse: {
