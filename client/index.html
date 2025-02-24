@@ -269,32 +269,21 @@
                         height: file.height,
                         width: file.width,
                         tileSize: 256,
-                        tileOverlap: 0,
-                        minLevel: 0,
-                        maxLevel: 0,
                         getTileUrl: function(level, x, y) {
-                            // 디버그 로그 추가
-                            console.log('OpenSeadragon requesting tile:', {
-                                level: level,
-                                x: x,
-                                y: y,
-                                tileSize: this.tileSize
-                            });
-
                             // 좌표 검증
-                            if (typeof x !== 'number' || typeof y !== 'number') {
-                                console.warn('Invalid coordinates:', {x, y});
+                            if (typeof x !== 'number' || typeof y !== 'number' || isNaN(x) || isNaN(y)) {
+                                console.warn('잘못된 좌표:', { level, x, y });
                                 return '';
                             }
 
-                            // 좌표를 타일 인덱스로 변환
+                            // 좌표를 정수로 변환
                             const coords = {
-                                x: Math.floor(x),
-                                y: Math.floor(y)
+                                x: Math.max(0, Math.floor(x)),
+                                y: Math.max(0, Math.floor(y))
                             };
 
                             const url = `/tiles/${fileId}/tile_${coords.x}_${coords.y}.jpg`;
-                            console.log('Generated URL:', url);
+                            console.log('타일 URL 생성:', { level, x, y, coords, url });
                             return url;
                         }
                     },

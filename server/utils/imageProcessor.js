@@ -18,25 +18,35 @@ const generateTiles = (inputPath, outputDir) => {
         ]);
 
         let imageSize = null;
+        let errorOutput = '';
 
         pythonProcess.stdout.on('data', (data) => {
             const output = data.toString().trim();
             console.log('Python 출력:', output);
             
             if (output.startsWith('IMAGE_SIZE:')) {
-                const [width, height] = output.split(':')[1].trim().split(',').map(Number);
-                imageSize = { width, height };
+                try {
+                    const [width, height] = output.split(':')[1].trim().split(',').map(Number);
+                    if (!isNaN(width) && !isNaN(height)) {
+                        imageSize = { width, height };
+                        console.log('이미지 크기 파싱 성공:', imageSize);
+                    }
+                } catch (error) {
+                    console.error('이미지 크기 파싱 오류:', error);
+                }
             }
         });
 
         pythonProcess.stderr.on('data', (data) => {
+            errorOutput += data.toString();
             console.error('Python 오류:', data.toString());
         });
 
         pythonProcess.on('close', (code) => {
-            if (code === 0 && imageSize) {
+            if (imageSize) {
                 resolve(imageSize);
             } else {
+                console.error('Python 프로세스 종료:', { code, errorOutput });
                 reject(new Error('이미지 처리 실패'));
             }
         });
