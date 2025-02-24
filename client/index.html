@@ -262,36 +262,37 @@
                 const viewer = OpenSeadragon({
                     id: "openseadragon",
                     prefixUrl: "https://cdnjs.cloudflare.com/ajax/libs/openseadragon/2.4.2/images/",
-                    debugMode: false,
-                    showDebugInfo: false,
+                    debugMode: true,
+                    showDebugInfo: true,
                     tileSources: {
-                        type: 'image',
-                        url: `/tiles/${fileId}/tile_0_0.jpg`,
-                        width: file.width,
                         height: file.height,
+                        width: file.width,
                         tileSize: 256,
-                        tileOverlap: 0,
                         minLevel: 0,
-                        maxLevel: Math.ceil(Math.log2(Math.max(file.width, file.height) / 256)),
+                        maxLevel: Math.ceil(Math.log2(Math.max(file.width, file.height))),
                         getTileUrl: function(level, x, y) {
-                            if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0) {
+                            if (!Number.isFinite(x) || !Number.isFinite(y)) {
                                 console.warn('❌ 잘못된 좌표:', { level, x, y });
-                                return '';
+                                return null;
                             }
 
-                            const scale = Math.pow(2, level);
-                            const levelWidth = Math.ceil(file.width / scale);
-                            const levelHeight = Math.ceil(file.height / scale);
-                            const tilesX = Math.ceil(levelWidth / 256);
-                            const tilesY = Math.ceil(levelHeight / 256);
+                            x = Math.max(0, Math.floor(x));
+                            y = Math.max(0, Math.floor(y));
+
+                            const scale = Math.pow(2, this.maxLevel - level);
+                            const levelWidth = Math.ceil(this.width / scale);
+                            const levelHeight = Math.ceil(this.height / scale);
+
+                            const tilesX = Math.ceil(levelWidth / this.tileSize);
+                            const tilesY = Math.ceil(levelHeight / this.tileSize);
 
                             if (x >= tilesX || y >= tilesY) {
-                                console.warn('❌ 범위 초과:', { x, y, tilesX, tilesY });
-                                return '';
+                                console.warn('❌ 범위 초과:', { level, x, y, tilesX, tilesY });
+                                return null;
                             }
 
                             const url = `/tiles/${fileId}/tile_${x}_${y}.jpg`;
-                            console.log('🔍 타일 요청:', { level, x, y, url });
+                            console.log('🔍 타일 요청:', { level, x, y, scale, url });
                             return url;
                         }
                     },
@@ -301,8 +302,11 @@
                     defaultZoomLevel: 0,
                     minZoomLevel: 0.1,
                     maxZoomLevel: 10,
-                    imageLoaderLimit: 3,
-                    maxImageCacheCount: 100,
+                    visibilityRatio: 1,
+                    constrainDuringPan: true,
+                    immediateRender: true,
+                    blendTime: 0,
+                    alwaysBlend: false,
                     gestureSettingsMouse: {
                         scrollToZoom: true,
                         clickToZoom: true,
@@ -310,6 +314,15 @@
                         pinchToZoom: true,
                         flickEnabled: true
                     }
+                });
+
+                viewer.addHandler('tile-drawing', function(event) {
+                    console.log('🎨 타일 그리기:', {
+                        level: event.tile.level,
+                        x: event.tile.x,
+                        y: event.tile.y,
+                        url: event.tile.url
+                    });
                 });
 
                 viewer.addHandler('tile-loaded', function(event) {
@@ -323,6 +336,10 @@
                 viewer.addHandler('open', function() {
                     console.log('🎯 뷰어 초기화 완료');
                     viewer.viewport.goHome();
+                });
+
+                viewer.addHandler('error', function(event) {
+                    console.error('🚨 뷰어 에러:', event.error);
                 });
             } catch (error) {
                 console.error("뷰어 초기화 중 오류:", error);
