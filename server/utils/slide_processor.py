@@ -5,6 +5,11 @@ from PIL import Image
 
 def get_image_size(input_path):
     try:
+        print(f"입력 파일 경로: {input_path}")
+        if not os.path.exists(input_path):
+            print(f"❌ 파일이 존재하지 않음: {input_path}")
+            return False
+            
         slide = openslide.OpenSlide(input_path)
         width, height = slide.dimensions
         print(f"IMAGE_SIZE:{width},{height}")
@@ -16,22 +21,35 @@ def get_image_size(input_path):
 
 def generate_tile(input_path, output_dir, x, y, tile_size=256):
     try:
+        print(f"타일 생성 시작:")
+        print(f"- 입력 파일: {input_path}")
+        print(f"- 출력 디렉토리: {output_dir}")
+        print(f"- 좌표: ({x}, {y})")
+        
+        if not os.path.exists(input_path):
+            print(f"❌ 입력 파일이 존재하지 않음: {input_path}")
+            return False
+            
         # SVS 파일 로드
         slide = openslide.OpenSlide(input_path)
         
         # 레벨 0(최고 해상도) 크기
         width = slide.dimensions[0]
         height = slide.dimensions[1]
+        print(f"- 이미지 크기: {width}x{height}")
         
         # 실제 픽셀 좌표 계산
         pixel_x = x * tile_size
         pixel_y = y * tile_size
+        print(f"- 픽셀 좌표: ({pixel_x}, {pixel_y})")
         
         # 타일 크기 계산 (이미지 경계에서 조정)
         current_tile_width = min(tile_size, width - pixel_x)
         current_tile_height = min(tile_size, height - pixel_y)
+        print(f"- 타일 크기: {current_tile_width}x{current_tile_height}")
         
         if current_tile_width <= 0 or current_tile_height <= 0:
+            print("❌ 타일 크기가 유효하지 않음")
             slide.close()
             return False
             
@@ -53,6 +71,8 @@ def generate_tile(input_path, output_dir, x, y, tile_size=256):
         return False
 
 if __name__ == "__main__":
+    print(f"인자 목록: {sys.argv}")
+    
     # 첫 번째 인자는 항상 input_path
     if len(sys.argv) < 3:
         print("Usage:")
@@ -62,6 +82,8 @@ if __name__ == "__main__":
 
     input_path = sys.argv[1]
     command = sys.argv[2]
+
+    print(f"실행 모드: {command}")
 
     if command == 'size-only':
         # 이미지 크기 확인 모드
