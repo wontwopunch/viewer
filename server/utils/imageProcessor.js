@@ -19,20 +19,21 @@ const generateTiles = (inputPath, outputDir) => {
 
         let imageSize = null;
         let errorOutput = '';
+        let stdoutData = '';  // 전체 stdout 데이터를 저장
 
         pythonProcess.stdout.on('data', (data) => {
             const output = data.toString().trim();
+            stdoutData += output + '\n';  // stdout 데이터 누적
             console.log('Python 출력:', output);
             
-            if (output.startsWith('IMAGE_SIZE:')) {
-                try {
-                    const [width, height] = output.split(':')[1].trim().split(',').map(Number);
-                    if (!isNaN(width) && !isNaN(height)) {
-                        imageSize = { width, height };
-                        console.log('이미지 크기 파싱 성공:', imageSize);
-                    }
-                } catch (error) {
-                    console.error('이미지 크기 파싱 오류:', error);
+            // IMAGE_SIZE: 문자열 찾기
+            const match = output.match(/IMAGE_SIZE:(\d+),(\d+)/);
+            if (match) {
+                const width = parseInt(match[1], 10);
+                const height = parseInt(match[2], 10);
+                if (!isNaN(width) && !isNaN(height)) {
+                    imageSize = { width, height };
+                    console.log('이미지 크기 파싱 성공:', imageSize);
                 }
             }
         });
@@ -43,12 +44,23 @@ const generateTiles = (inputPath, outputDir) => {
         });
 
         pythonProcess.on('close', (code) => {
+            console.log('Python 프로세스 종료:', {
+                code,
+                errorOutput,
+                stdoutData,
+                imageSize
+            });
+
             if (imageSize) {
                 resolve(imageSize);
             } else {
-                console.error('Python 프로세스 종료:', { code, errorOutput });
-                reject(new Error('이미지 처리 실패'));
+                reject(new Error('이미지 크기를 가져올 수 없습니다.'));
             }
+        });
+
+        pythonProcess.on('error', (error) => {
+            console.error('Python 프로세스 실행 오류:', error);
+            reject(new Error('Python 프로세스 실행 실패'));
         });
     });
 };
