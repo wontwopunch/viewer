@@ -266,11 +266,15 @@
                     showDebugInfo: true,
                     debugGridColor: '#437AB2',
                     tileSources: {
+                        type: 'legacy-image-pyramid',
+                        levels: [{
+                            url: `/tiles/${fileId}/tile_0_0.jpg`,
+                            height: file.height,
+                            width: file.width
+                        }],
+                        tileSize: 256,
                         height: file.height,
                         width: file.width,
-                        tileSize: 256,
-                        minLevel: 0,
-                        maxLevel: Math.ceil(Math.log2(Math.max(file.width, file.height) / 256)),
                         getTileUrl: function(level, x, y) {
                             // 좌표 검증
                             if (typeof x !== 'number' || typeof y !== 'number' || isNaN(x) || isNaN(y)) {
