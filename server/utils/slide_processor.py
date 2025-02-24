@@ -7,13 +7,11 @@ def get_image_size(input_path):
     try:
         slide = openslide.OpenSlide(input_path)
         width, height = slide.dimensions
-        # 출력 형식 통일 및 공백 제거
-        size_str = f"IMAGE_SIZE:{width},{height}\n"
-        print(size_str.strip())
+        print(f"IMAGE_SIZE:{width},{height}")
         slide.close()
         return True
     except Exception as e:
-        print(f"❌ 오류 발생: {str(e)}")
+        print(f"❌ 이미지 크기 확인 오류: {str(e)}")
         return False
 
 def generate_tile(input_path, output_dir, x, y, tile_size=256):
@@ -54,16 +52,21 @@ def generate_tile(input_path, output_dir, x, y, tile_size=256):
         return False
 
 if __name__ == "__main__":
-    if len(sys.argv) < 5:
-        print("Usage: python slide_processor.py <input_path> <output_dir> <x> <y>")
+    if len(sys.argv) < 3:
+        print("Usage: python slide_processor.py <input_path> <output_dir|size-only> [x y]")
         sys.exit(1)
     
     input_path = sys.argv[1]
-    output_dir = sys.argv[2]
+    mode = sys.argv[2]
     
-    if output_dir == 'size-only':
-        get_image_size(input_path)
+    if mode == 'size-only':
+        success = get_image_size(input_path)
     else:
+        if len(sys.argv) < 5:
+            print("Usage: python slide_processor.py <input_path> <output_dir> <x> <y>")
+            sys.exit(1)
         x = int(sys.argv[3])
         y = int(sys.argv[4])
-        generate_tile(input_path, output_dir, x, y)
+        success = generate_tile(input_path, mode, x, y)
+    
+    sys.exit(0 if success else 1)
