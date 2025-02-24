@@ -262,9 +262,8 @@
                 const viewer = OpenSeadragon({
                     id: "openseadragon",
                     prefixUrl: "https://cdnjs.cloudflare.com/ajax/libs/openseadragon/2.4.2/images/",
-                    debugMode: true,
-                    showDebugInfo: true,
-                    debugGridColor: '#437AB2',
+                    debugMode: false,
+                    showDebugInfo: false,
                     tileSources: {
                         type: 'legacy-image-pyramid',
                         levels: [{
@@ -276,26 +275,38 @@
                         height: file.height,
                         width: file.width,
                         getTileUrl: function(level, x, y) {
-                            // 좌표 검증
-                            if (typeof x !== 'number' || typeof y !== 'number' || isNaN(x) || isNaN(y) || x < 0 || y < 0) {
-                                console.warn('❌ 잘못된 좌표:', { level, x, y });
+                            if (!Number.isFinite(x) || !Number.isFinite(y)) {
+                                console.warn('❌ 유효하지 않은 좌표:', { level, x, y });
                                 return '';
                             }
 
-                            // 좌표를 정수로 변환
-                            const coords = {
-                                x: Math.max(0, Math.floor(x)),
-                                y: Math.max(0, Math.floor(y))
-                            };
+                            const tileX = Math.max(0, Math.floor(x));
+                            const tileY = Math.max(0, Math.floor(y));
 
-                            const url = `/tiles/${fileId}/tile_${coords.x}_${coords.y}.jpg`;
-                            console.log('🔍 타일 요청:', { level, coords, url });
+                            const maxTileX = Math.ceil(file.width / 256);
+                            const maxTileY = Math.ceil(file.height / 256);
+
+                            if (tileX >= maxTileX || tileY >= maxTileY) {
+                                console.warn('❌ 범위를 벗어난 좌표:', { tileX, tileY, maxTileX, maxTileY });
+                                return '';
+                            }
+
+                            const url = `/tiles/${fileId}/tile_${tileX}_${tileY}.jpg`;
+                            console.log('🔍 타일 요청:', { level, x: tileX, y: tileY, url });
                             return url;
                         }
                     },
                     maxZoomPixelRatio: 2,
+                    minZoomImageRatio: 1,
+                    visibilityRatio: 1,
                     constrainDuringPan: true,
                     showRotationControl: true,
+                    imageLoaderLimit: 5,
+                    maxImageCacheCount: 200,
+                    minPixelRatio: 0.5,
+                    immediateRender: false,
+                    blendTime: 0.1,
+                    alwaysBlend: false,
                     gestureSettingsMouse: {
                         scrollToZoom: true,
                         clickToZoom: true,
@@ -304,31 +315,18 @@
                         flickEnabled: true,
                         flickMinSpeed: 120,
                         flickMomentum: 0.25
-                    },
-                    minZoomImageRatio: 0.8,
-                    immediateRender: false,
-                    blendTime: 0.1,
-                    alwaysBlend: false,
-                    minPixelRatio: 0.5,
-                    smoothTileEdgesMinZoom: 1.0,
-                    ajaxWithCredentials: false,
-                    loadTilesWithAjax: true,
-                    maxImageCacheCount: 200,
-                    timeout: 30000,
-                    imageLoaderLimit: 4,
-                    maxTilesPerFrame: 2,
-                    placeholderFillStyle: "#F8F8F8",
-                    wrapHorizontal: false,
-                    wrapVertical: false
+                    }
                 });
 
                 viewer.addHandler('tile-loaded', function(event) {
-                    console.log('타일 로드 완료:', event.tile.url);
+                    console.log('✅ 타일 로드 완료:', event.tile.url);
                 });
 
                 viewer.addHandler('tile-load-failed', function(event) {
-                    console.error('타일 로드 실패:', event.tile.url, event.message);
+                    console.error('❌ 타일 로드 실패:', event.tile.url);
                 });
+
+                viewer.viewport.goHome();
             } catch (error) {
                 console.error("뷰어 초기화 중 오류:", error);
             }
