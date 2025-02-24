@@ -7,7 +7,7 @@ const path = require('path');
  * @param {string} outputDir - 출력 타일 저장 디렉토리
  * @param {number} tileSize - 타일 크기 (기본값: 256)
  */
-const generateTiles = (inputPath, outputDir) => {
+async function generateTiles(inputPath) {
     return new Promise((resolve, reject) => {
         console.log('📂 처리할 SVS 파일:', inputPath);
         
@@ -19,11 +19,11 @@ const generateTiles = (inputPath, outputDir) => {
 
         let imageSize = null;
         let errorOutput = '';
-        let stdoutData = '';  // 전체 stdout 데이터를 저장
+        let stdoutData = '';
 
         pythonProcess.stdout.on('data', (data) => {
             const output = data.toString().trim();
-            stdoutData += output + '\n';  // stdout 데이터 누적
+            stdoutData += output + '\n';
             console.log('Python 출력:', output);
             
             // IMAGE_SIZE: 문자열 찾기
@@ -40,7 +40,7 @@ const generateTiles = (inputPath, outputDir) => {
 
         pythonProcess.stderr.on('data', (data) => {
             errorOutput += data.toString();
-            console.error('Python 오류:', data.toString());
+            console.error('Python 오류:', data.toString().trim());
         });
 
         pythonProcess.on('close', (code) => {
@@ -51,18 +51,13 @@ const generateTiles = (inputPath, outputDir) => {
                 imageSize
             });
 
-            if (imageSize) {
+            if (code === 0 && imageSize) {
                 resolve(imageSize);
             } else {
-                reject(new Error('이미지 크기를 가져올 수 없습니다.'));
+                reject(new Error('이미지 처리 실패'));
             }
         });
-
-        pythonProcess.on('error', (error) => {
-            console.error('Python 프로세스 실행 오류:', error);
-            reject(new Error('Python 프로세스 실행 실패'));
-        });
     });
-};
+}
 
 module.exports = { generateTiles };
