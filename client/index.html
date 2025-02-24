@@ -283,13 +283,12 @@
                                 return '';
                             }
 
-                            // 좌표를 정수로 변환 (256을 곱함)
+                            // 좌표를 타일 인덱스로 변환
                             const coords = {
-                                x: Math.floor(x * 256),
-                                y: Math.floor(y * 256)
+                                x: Math.floor(x),
+                                y: Math.floor(y)
                             };
 
-                            // 서버의 타일 파일명 패턴과 일치시킴
                             const url = `/tiles/${fileId}/tile_${coords.x}_${coords.y}.jpg`;
                             console.log('Generated URL:', url);
                             return url;
@@ -298,10 +297,10 @@
                     showNavigator: true,
                     navigatorPosition: "BOTTOM_RIGHT",
                     maxZoomPixelRatio: 2,
-                    defaultZoomLevel: 0,
+                    defaultZoomLevel: 1,
                     visibilityRatio: 1,
-                    minZoomLevel: 0.1,
-                    maxZoomLevel: 10,
+                    minZoomLevel: 1,
+                    maxZoomLevel: 1,
                     immediateRender: true,
                     wrapHorizontal: false,
                     wrapVertical: false,
