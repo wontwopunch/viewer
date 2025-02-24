@@ -25,24 +25,30 @@ def generate_tiles(input_path, output_dir, tile_size=256):
         width = slide.dimensions[0]
         height = slide.dimensions[1]
         
+        # 이미지 크기 출력 (공백 없이)
         print(f"IMAGE_SIZE:{width},{height}")
         
         # 출력 디렉토리 생성
         os.makedirs(output_dir, exist_ok=True)
         
+        # 타일 크기 계산 (이미지를 32x32 타일로 나누기)
+        tile_width = width // 32
+        tile_height = height // 32
+        
         # 타일 생성
-        for x in range(0, width, tile_size):
-            for y in range(0, height, tile_size):
-                tile_width = min(tile_size, width - x)
-                tile_height = min(tile_size, height - y)
+        for x in range(0, width, tile_width):
+            for y in range(0, height, tile_height):
+                # 마지막 타일 크기 조정
+                current_tile_width = min(tile_width, width - x)
+                current_tile_height = min(tile_height, height - y)
                 
                 # 타일 추출
-                tile = slide.read_region((x, y), 0, (tile_width, tile_height))
+                tile = slide.read_region((x, y), 0, (current_tile_width, current_tile_height))
                 tile = tile.convert('RGB')
                 
-                # 타일 인덱스 계산 (256으로 나눈 값)
-                tile_x = x // tile_size
-                tile_y = y // tile_size
+                # 타일 인덱스 계산
+                tile_x = x // tile_width
+                tile_y = y // tile_height
                 
                 # 저장
                 tile_path = os.path.join(output_dir, f'tile_{tile_x}_{tile_y}.jpg')

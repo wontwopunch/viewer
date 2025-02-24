@@ -268,7 +268,7 @@
                     tileSources: {
                         height: file.height,
                         width: file.width,
-                        tileSize: 256,
+                        tileSize: file.width / 32,
                         getTileUrl: function(level, x, y) {
                             // 디버그 로그 추가
                             console.log('OpenSeadragon requesting tile:', {
