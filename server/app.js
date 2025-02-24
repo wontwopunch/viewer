@@ -3,6 +3,8 @@ const session = require('express-session');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const mongoose = require('mongoose');
+const cors = require('cors');
 
 // commit용
 
@@ -48,6 +50,11 @@ const upload = multer({ storage: storage });
 // 클라이언트 폴더 정적 파일 제공
 app.use(express.static(path.join(__dirname, '../client')));
 
+// 미들웨어 설정
+app.use(cors());
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/tiles', express.static(path.join(__dirname, '../tiles')));
+
 // 라우터 연결
 app.use('/api', authRouter);
 app.use('/tiles', tileRouter);
@@ -84,58 +91,32 @@ app.get('/admin', requireAuth, (req, res) => {
 
 // 파일 업로드 처리
 app.post('/upload', upload.single('svsFile'), async (req, res) => {
-    if (!req.file) {
-        return res.status(400).json({ error: "파일이 선택되지 않았습니다." });
-    }
-
     try {
-        // 이미 존재하는 파일인지 확인
-        const existingFile = await FileModel.findOne({ path: req.file.filename });
-        if (existingFile) {
-            console.log('이미 존재하는 파일:', existingFile);
-            // 이미지 크기 가져오기
-            const filePath = path.join(__dirname, '../uploads', existingFile.path);
-            const imageSize = await generateTiles(filePath, path.join(__dirname, '../tiles', existingFile.path));
-            
-            return res.json({ 
-                tileSource: existingFile.path,
-                width: imageSize.width,
-                height: imageSize.height
-            });
+        if (!req.file) {
+            return res.status(400).json({ error: "파일이 업로드되지 않았습니다." });
         }
 
-        const filePath = path.join(__dirname, '../uploads', req.file.filename);
-        const outputDir = path.join(__dirname, '../tiles', req.file.filename);
-
-        if (!fs.existsSync(outputDir)) {
-            fs.mkdirSync(outputDir, { recursive: true });
-        }
-
-        console.log(`🔹 업로드된 파일: ${filePath}`);
-        console.log('파일 정보:', req.file);
-
-        // 타일 생성 및 이미지 크기 받기
-        const imageSize = await generateTiles(filePath, outputDir);
+        // 이미지 크기 확인
+        const imageSize = await generateTiles(req.file.path);
         
-        // 파일 정보를 MongoDB에 저장
-        const file = new FileModel({
-            name: req.file.originalname,
-            path: req.file.filename,
-            public: true
-        });
-        await file.save();
-        
-        const response = { 
-            tileSource: req.file.filename,
+        // 파일 정보를 DB에 저장
+        const fileDoc = new FileModel({
+            fileId: req.file.filename,
             width: imageSize.width,
-            height: imageSize.height
-        };
-        console.log('응답 데이터:', response);
-        res.json(response);
+            height: imageSize.height,
+            uploadDate: new Date()
+        });
+
+        await fileDoc.save();
+
+        res.json({
+            tileSource: req.file.filename,
+            ...imageSize
+        });
 
     } catch (error) {
         console.error('파일 처리 오류:', error);
-        res.status(500).json({ error: '파일 처리 중 오류가 발생했습니다.', details: error.message });
+        res.status(500).json({ error: error.message });
     }
 });
 
@@ -153,3 +134,11 @@ app.get('/api/debug/files', async (req, res) => {
 app.listen(PORT, () => {
     console.log(`서버 실행 중: http://localhost:${PORT}`);
 });
+
+// MongoDB 연결
+mongoose.connect('mongodb://localhost:27017/viewer', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+})
+.then(() => console.log('MongoDB connected successfully'))
+.catch(err => console.error('MongoDB connection error:', err));
