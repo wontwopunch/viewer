@@ -48,15 +48,17 @@ router.get('/:fileId', async (req, res) => {
             ...imageSize
         });
 
-        // DB에 파일 정보 저장
-        const fileDoc = new FileModel({
-            fileId: req.params.fileId,
-            width: imageSize.width,
-            height: imageSize.height,
-            uploadDate: new Date()
-        });
-
-        await fileDoc.save();
+        // DB에 파일 정보 저장 또는 업데이트
+        await FileModel.findOneAndUpdate(
+            { fileId: req.params.fileId },
+            {
+                fileId: req.params.fileId,
+                width: imageSize.width,
+                height: imageSize.height,
+                uploadDate: new Date()
+            },
+            { upsert: true, new: true }
+        );
 
         res.json({
             id: req.params.fileId,
