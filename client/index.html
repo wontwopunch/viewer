@@ -276,8 +276,20 @@
                         height: file.height,
                         width: file.width,
                         getTileUrl: function(level, x, y) {
-                            const url = `/tiles/${fileId}/tile_${x}_${y}.jpg`;
-                            console.log('타일 요청:', { level, x, y, url });
+                            // 좌표 검증
+                            if (typeof x !== 'number' || typeof y !== 'number' || isNaN(x) || isNaN(y) || x < 0 || y < 0) {
+                                console.warn('❌ 잘못된 좌표:', { level, x, y });
+                                return '';
+                            }
+
+                            // 좌표를 정수로 변환
+                            const coords = {
+                                x: Math.max(0, Math.floor(x)),
+                                y: Math.max(0, Math.floor(y))
+                            };
+
+                            const url = `/tiles/${fileId}/tile_${coords.x}_${coords.y}.jpg`;
+                            console.log('🔍 타일 요청:', { level, coords, url });
                             return url;
                         }
                     },

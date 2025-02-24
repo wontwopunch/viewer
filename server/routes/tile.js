@@ -13,12 +13,19 @@ async function generateTile(inputPath, tileDir, x, y) {
     const tileKey = `${x}_${y}`;
     const tilePath = path.join(tileDir, `tile_${tileKey}.jpg`);
 
+    console.log(`🔍 타일 생성 시작 (${tileKey}):`, {
+        inputPath,
+        tileDir,
+        tilePath
+    });
+
     // 이미 생성된 타일이 있는지 확인
     try {
         await fs.access(tilePath);
+        console.log(`✅ 기존 타일 발견 (${tileKey}):`, tilePath);
         return tilePath;
     } catch (error) {
-        // 파일이 없으면 생성
+        console.log(`🔄 새 타일 생성 필요 (${tileKey})`);
     }
 
     return new Promise((resolve, reject) => {
@@ -31,15 +38,24 @@ async function generateTile(inputPath, tileDir, x, y) {
         ]);
 
         let errorOutput = '';
+        let stdoutData = '';
+
+        pythonProcess.stdout.on('data', (data) => {
+            stdoutData += data.toString();
+            console.log(`📄 Python 출력 (${tileKey}):`, data.toString().trim());
+        });
 
         pythonProcess.stderr.on('data', (data) => {
             errorOutput += data.toString();
+            console.error(`❌ Python 오류 (${tileKey}):`, data.toString().trim());
         });
 
         pythonProcess.on('close', (code) => {
             if (code === 0) {
+                console.log(`✅ 타일 생성 완료 (${tileKey})`);
                 resolve(tilePath);
             } else {
+                console.error(`❌ 타일 생성 실패 (${tileKey}):`, errorOutput);
                 reject(new Error(`타일 생성 실패: ${errorOutput}`));
             }
         });
@@ -52,15 +68,24 @@ router.get('/:fileId/tile_:x_:y.jpg', async (req, res) => {
         const x = parseInt(req.params.x);
         const y = parseInt(req.params.y);
         
+        // 좌표 유효성 검사
+        if (isNaN(x) || isNaN(y) || x < 0 || y < 0) {
+            console.error('❌ 잘못된 좌표:', { x, y });
+            return res.status(400).send('잘못된 타일 좌표입니다.');
+        }
+
+        const tileKey = `${fileId}_${x}_${y}`;
+        console.log(`📥 타일 요청 받음 (${tileKey})`);
+
         const inputPath = path.join(__dirname, '../../uploads', fileId);
         const tileDir = path.join(__dirname, '../../tiles', fileId);
-        const tileKey = `${fileId}_${x}_${y}`;
 
         // 디렉토리 생성
         await fs.mkdir(tileDir, { recursive: true });
 
         // 이미 진행 중인 타일 생성이 있는지 확인
         if (inProgress.has(tileKey)) {
+            console.log(`⏳ 진행 중인 타일 생성 대기 (${tileKey})`);
             const tilePath = await inProgress.get(tileKey);
             return res.sendFile(tilePath);
         }
@@ -71,13 +96,14 @@ router.get('/:fileId/tile_:x_:y.jpg', async (req, res) => {
 
         try {
             const tilePath = await tilePromise;
+            console.log(`📤 타일 전송 (${tileKey}):`, tilePath);
             res.sendFile(tilePath);
         } finally {
             inProgress.delete(tileKey);
         }
 
     } catch (error) {
-        console.error('타일 처리 오류:', error);
+        console.error('🚨 타일 처리 오류:', error);
         res.status(500).send('타일 생성 중 오류가 발생했습니다.');
     }
 });
