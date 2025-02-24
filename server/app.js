@@ -5,23 +5,25 @@ const path = require('path');
 const fs = require('fs');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const connectDB = require('./db');
+const uploadRouter = require('./routes/upload');
+const filesRouter = require('./routes/files');
+const tileRouter = require('./routes/tile');
 
-const tileRouter = require('./routes/tile'); 
 const authRouter = require('./routes/auth'); 
-const fileRouter = require('./routes/files');
 const { generateTiles } = require('./utils/imageProcessor');
 const FileModel = require('./models/file');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // MongoDB 연결
-mongoose.connect('mongodb://localhost:27017/viewer', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-})
-.then(() => console.log('MongoDB connected successfully'))
-.catch(err => console.error('MongoDB connection error:', err));
+connectDB().then(() => {
+    console.log('✅ MongoDB 연결 완료');
+}).catch(err => {
+    console.error('❌ MongoDB 연결 실패:', err);
+    process.exit(1);
+});
 
 // 세션 설정
 app.use(session({
@@ -58,7 +60,8 @@ app.use('/tiles', express.static(path.join(__dirname, '../tiles')));
 // 라우터 연결
 app.use('/api', authRouter);
 app.use('/tiles', tileRouter);
-app.use('/api/files', fileRouter);
+app.use('/api/files', filesRouter);
+app.use('/upload', uploadRouter);
 
 // 로그인 확인 미들웨어
 function requireAuth(req, res, next) {

@@ -2,8 +2,9 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { generateTiles } = require('../utils/imageProcessor');
-const FileModel = require('../models/file');
+const { processSlide } = require('../utils/imageProcessor');
+const File = require('../models/file');
+
 const router = express.Router();
 
 // 파일 업로드 설정
@@ -16,44 +17,45 @@ const storage = multer.diskStorage({
         cb(null, uploadDir);
     },
     filename: function (req, file, cb) {
-        cb(null, Date.now() + path.extname(file.originalname));
+        const uniqueSuffix = Date.now();
+        cb(null, uniqueSuffix + path.extname(file.originalname));
     }
 });
 
 const upload = multer({ storage: storage });
 
 // 파일 업로드 처리
-router.post('/', upload.single('svsFile'), async (req, res) => {
+router.post('/', upload.single('file'), async (req, res) => {
     try {
         if (!req.file) {
-            return res.status(400).json({ error: "파일이 업로드되지 않았습니다." });
+            return res.status(400).json({ error: '파일이 없습니다.' });
         }
 
-        console.log('🔹 업로드된 파일:', req.file.path);
-        console.log('파일 정보:', req.file);
+        console.log('📤 파일 업로드 시작:', req.file.path);
 
-        // 이미지 크기 확인
-        const imageSize = await generateTiles(req.file.path);
-        
-        // 파일 정보를 DB에 저장
-        const fileId = req.file.filename;
-        const fileDoc = new FileModel({
-            fileId: fileId,
-            width: imageSize.width,
-            height: imageSize.height,
-            uploadDate: new Date()
+        // 이미지 크기 정보 가져오기
+        const imageInfo = await processSlide(req.file.path, 'size-only');
+        console.log('📏 이미지 정보:', imageInfo);
+
+        // MongoDB에 파일 정보 저장
+        const fileDoc = new File({
+            fileId: path.basename(req.file.filename, path.extname(req.file.filename)),
+            width: imageInfo.width,
+            height: imageInfo.height,
+            uploadDate: new Date(),
+            public: false
         });
 
-        await fileDoc.save();
+        const savedDoc = await fileDoc.save();
+        console.log('💾 파일 정보 저장됨:', savedDoc.toObject());
 
         res.json({
-            tileSource: fileId,
-            ...imageSize
+            message: '파일 업로드 성공',
+            tileSource: fileDoc.fileId
         });
-
     } catch (error) {
-        console.error('파일 업로드 오류:', error);
-        res.status(500).json({ error: error.message });
+        console.error('❌ 파일 업로드 오류:', error);
+        res.status(500).json({ error: '파일 처리 중 오류가 발생했습니다.' });
     }
 });
 
