@@ -6,20 +6,22 @@ const fs = require('fs');
 const mongoose = require('mongoose');
 const cors = require('cors');
 
-// commit용
-
-
 const tileRouter = require('./routes/tile'); 
 const authRouter = require('./routes/auth'); 
 const fileRouter = require('./routes/files');
 const { generateTiles } = require('./utils/imageProcessor');
-const connectDB = require('./db.js');
-const FileModel = require('./models/file');  // 경로 수정
+const FileModel = require('./models/file');
 
 const app = express();
 const PORT = 3000;
 
-connectDB();
+// MongoDB 연결
+mongoose.connect('mongodb://localhost:27017/viewer', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+})
+.then(() => console.log('MongoDB connected successfully'))
+.catch(err => console.error('MongoDB connection error:', err));
 
 // 세션 설정
 app.use(session({
@@ -47,11 +49,9 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// 클라이언트 폴더 정적 파일 제공
-app.use(express.static(path.join(__dirname, '../client')));
-
 // 미들웨어 설정
 app.use(cors());
+app.use(express.static(path.join(__dirname, '../client')));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/tiles', express.static(path.join(__dirname, '../tiles')));
 
@@ -69,22 +69,19 @@ function requireAuth(req, res, next) {
     }
 }
 
-// 첫 페이지 요청 시 로그인 페이지 로드
+// 라우트 설정
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../client', 'login.html'));
 });
 
-// 로그인 후 index.html로 이동
 app.get('/index.html', requireAuth, (req, res) => {
     res.sendFile(path.join(__dirname, '../client', 'index.html'));
 });
 
-// 로그인 페이지 접근
 app.get('/login', (req, res) => {
     res.sendFile(path.join(__dirname, '../client', 'login.html'));
 });
 
-// admin 페이지 접근
 app.get('/admin', requireAuth, (req, res) => {
     res.sendFile(path.join(__dirname, '../client', 'admin.html'));
 });
@@ -99,15 +96,17 @@ app.post('/upload', upload.single('svsFile'), async (req, res) => {
         // 이미지 크기 확인
         const imageSize = await generateTiles(req.file.path);
         
-        // 파일 정보를 DB에 저장
-        const fileDoc = new FileModel({
-            fileId: req.file.filename,
-            width: imageSize.width,
-            height: imageSize.height,
-            uploadDate: new Date()
-        });
-
-        await fileDoc.save();
+        // 기존 파일 정보가 있으면 업데이트, 없으면 새로 생성
+        const fileDoc = await FileModel.findOneAndUpdate(
+            { fileId: req.file.filename },
+            {
+                fileId: req.file.filename,
+                width: imageSize.width,
+                height: imageSize.height,
+                uploadDate: new Date()
+            },
+            { upsert: true, new: true }
+        );
 
         res.json({
             tileSource: req.file.filename,
@@ -120,7 +119,7 @@ app.post('/upload', upload.single('svsFile'), async (req, res) => {
     }
 });
 
-// 파일 목록 확인 API 추가
+// 파일 목록 확인 API
 app.get('/api/debug/files', async (req, res) => {
     try {
         const files = await FileModel.find();
@@ -130,15 +129,7 @@ app.get('/api/debug/files', async (req, res) => {
     }
 });
 
-// 🚀 서버 실행
+// 서버 시작
 app.listen(PORT, () => {
     console.log(`서버 실행 중: http://localhost:${PORT}`);
 });
-
-// MongoDB 연결
-mongoose.connect('mongodb://localhost:27017/viewer', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-})
-.then(() => console.log('MongoDB connected successfully'))
-.catch(err => console.error('MongoDB connection error:', err));
