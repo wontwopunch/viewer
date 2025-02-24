@@ -49,16 +49,14 @@ router.get('/:fileId', async (req, res) => {
         });
 
         // DB에 파일 정보 저장
-        await FileModel.findOneAndUpdate(
-            { fileId: req.params.fileId },
-            {
-                fileId: req.params.fileId,
-                width: imageSize.width,
-                height: imageSize.height,
-                uploadDate: new Date()
-            },
-            { upsert: true }
-        );
+        const fileDoc = new FileModel({
+            fileId: req.params.fileId,
+            width: imageSize.width,
+            height: imageSize.height,
+            uploadDate: new Date()
+        });
+
+        await fileDoc.save();
 
         res.json({
             id: req.params.fileId,
