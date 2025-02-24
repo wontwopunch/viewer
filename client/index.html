@@ -265,48 +265,54 @@
                     debugMode: false,
                     showDebugInfo: false,
                     tileSources: {
-                        type: 'legacy-image-pyramid',
-                        levels: [{
-                            url: `/tiles/${fileId}/tile_0_0.jpg`,
-                            height: file.height,
-                            width: file.width
-                        }],
-                        tileSize: 256,
                         height: file.height,
                         width: file.width,
+                        tileSize: 256,
+                        minLevel: 8,    // 최소 줌 레벨
+                        maxLevel: 16,   // 최대 줌 레벨
                         getTileUrl: function(level, x, y) {
-                            if (!Number.isFinite(x) || !Number.isFinite(y)) {
-                                console.warn('❌ 유효하지 않은 좌표:', { level, x, y });
+                            // 레벨에 따른 스케일 계산
+                            const scale = Math.pow(2, level);
+                            
+                            // 타일 좌표 계산
+                            const tileX = Math.floor(x * scale);
+                            const tileY = Math.floor(y * scale);
+                            
+                            // 유효성 검사
+                            if (!Number.isFinite(tileX) || !Number.isFinite(tileY) || tileX < 0 || tileY < 0) {
+                                console.warn('❌ 유효하지 않은 타일 좌표:', { level, x, y, tileX, tileY });
                                 return '';
                             }
 
-                            const tileX = Math.max(0, Math.floor(x));
-                            const tileY = Math.max(0, Math.floor(y));
-
-                            const maxTileX = Math.ceil(file.width / 256);
-                            const maxTileY = Math.ceil(file.height / 256);
+                            // 최대 타일 인덱스 계산
+                            const maxTileX = Math.ceil(file.width / (256 * scale));
+                            const maxTileY = Math.ceil(file.height / (256 * scale));
 
                             if (tileX >= maxTileX || tileY >= maxTileY) {
-                                console.warn('❌ 범위를 벗어난 좌표:', { tileX, tileY, maxTileX, maxTileY });
+                                console.warn('❌ 범위를 벗어난 타일 좌표:', { tileX, tileY, maxTileX, maxTileY });
                                 return '';
                             }
 
                             const url = `/tiles/${fileId}/tile_${tileX}_${tileY}.jpg`;
-                            console.log('🔍 타일 요청:', { level, x: tileX, y: tileY, url });
+                            console.log('🔍 타일 요청:', { level, scale, tileX, tileY, url });
                             return url;
                         }
                     },
                     maxZoomPixelRatio: 2,
-                    minZoomImageRatio: 1,
+                    minZoomLevel: 0.1,
+                    maxZoomLevel: 10,
+                    defaultZoomLevel: 0,
                     visibilityRatio: 1,
                     constrainDuringPan: true,
                     showRotationControl: true,
+                    // 성능 최적화 설정
                     imageLoaderLimit: 5,
                     maxImageCacheCount: 200,
                     minPixelRatio: 0.5,
                     immediateRender: false,
                     blendTime: 0.1,
                     alwaysBlend: false,
+                    // 제스처 설정
                     gestureSettingsMouse: {
                         scrollToZoom: true,
                         clickToZoom: true,
