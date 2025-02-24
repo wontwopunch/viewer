@@ -268,17 +268,21 @@
                     tileSources: {
                         height: file.height,
                         width: file.width,
-                        tileSize: file.width / 32,
+                        tileSize: 256,
+                        tileOverlap: 0,
+                        minLevel: 0,
+                        maxLevel: 0,
                         getTileUrl: function(level, x, y) {
                             // 디버그 로그 추가
                             console.log('OpenSeadragon requesting tile:', {
                                 level: level,
                                 x: x,
-                                y: y
+                                y: y,
+                                tileSize: this.tileSize
                             });
 
                             // 좌표 검증
-                            if (x === undefined || y === undefined) {
+                            if (typeof x !== 'number' || typeof y !== 'number') {
                                 console.warn('Invalid coordinates:', {x, y});
                                 return '';
                             }
