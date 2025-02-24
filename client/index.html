@@ -265,52 +265,44 @@
                     debugMode: false,
                     showDebugInfo: false,
                     tileSources: {
-                        type: 'legacy-image-pyramid',
-                        levels: [{
-                            url: `/tiles/${fileId}/tile_0_0.jpg`,
-                            width: file.width,
-                            height: file.height
-                        }],
-                        tileSize: 256,
+                        type: 'image',
+                        url: `/tiles/${fileId}/tile_0_0.jpg`,
                         width: file.width,
                         height: file.height,
+                        tileSize: 256,
+                        tileOverlap: 0,
+                        minLevel: 0,
+                        maxLevel: Math.ceil(Math.log2(Math.max(file.width, file.height) / 256)),
                         getTileUrl: function(level, x, y) {
-                            // 기본 좌표 검증
-                            if (typeof x !== 'number' || typeof y !== 'number') {
-                                console.warn('❌ 잘못된 좌표 타입:', { level, x, y });
+                            if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0) {
+                                console.warn('❌ 잘못된 좌표:', { level, x, y });
                                 return '';
                             }
 
-                            // 음수 좌표 처리
-                            const tileX = Math.max(0, Math.floor(x));
-                            const tileY = Math.max(0, Math.floor(y));
+                            const scale = Math.pow(2, level);
+                            const levelWidth = Math.ceil(file.width / scale);
+                            const levelHeight = Math.ceil(file.height / scale);
+                            const tilesX = Math.ceil(levelWidth / 256);
+                            const tilesY = Math.ceil(levelHeight / 256);
 
-                            // 최대 타일 인덱스 계산
-                            const maxTileX = Math.ceil(file.width / 256);
-                            const maxTileY = Math.ceil(file.height / 256);
-
-                            // 범위 검사
-                            if (tileX >= maxTileX || tileY >= maxTileY) {
-                                console.warn('❌ 범위 초과:', { tileX, tileY, maxTileX, maxTileY });
+                            if (x >= tilesX || y >= tilesY) {
+                                console.warn('❌ 범위 초과:', { x, y, tilesX, tilesY });
                                 return '';
                             }
 
-                            const url = `/tiles/${fileId}/tile_${tileX}_${tileY}.jpg`;
-                            console.log('🔍 타일 요청:', { level, tileX, tileY, url });
+                            const url = `/tiles/${fileId}/tile_${x}_${y}.jpg`;
+                            console.log('🔍 타일 요청:', { level, x, y, url });
                             return url;
                         }
                     },
-                    // 기본 설정
                     showNavigator: true,
                     navigatorPosition: 'BOTTOM_RIGHT',
                     maxZoomPixelRatio: 2,
                     defaultZoomLevel: 0,
                     minZoomLevel: 0.1,
                     maxZoomLevel: 10,
-                    // 성능 설정
                     imageLoaderLimit: 3,
                     maxImageCacheCount: 100,
-                    // 제스처 설정
                     gestureSettingsMouse: {
                         scrollToZoom: true,
                         clickToZoom: true,
@@ -320,7 +312,6 @@
                     }
                 });
 
-                // 이벤트 핸들러
                 viewer.addHandler('tile-loaded', function(event) {
                     console.log('✅ 타일 로드 완료:', event.tile.url);
                 });
@@ -329,8 +320,10 @@
                     console.error('❌ 타일 로드 실패:', event.tile.url);
                 });
 
-                // 초기 뷰 설정
-                viewer.viewport.goHome();
+                viewer.addHandler('open', function() {
+                    console.log('🎯 뷰어 초기화 완료');
+                    viewer.viewport.goHome();
+                });
             } catch (error) {
                 console.error("뷰어 초기화 중 오류:", error);
             }
