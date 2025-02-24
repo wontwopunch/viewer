@@ -265,56 +265,48 @@
                     debugMode: true,
                     showDebugInfo: true,
                     tileSources: {
-                        Image: {
-                            xmlns: "http://schemas.microsoft.com/deepzoom/2008",
-                            Url: `/tiles/${fileId}/`,
-                            Format: "jpg",
-                            Overlap: 0,
-                            TileSize: 256,
-                            Size: {
-                                Width: file.width,
-                                Height: file.height
-                            }
-                        },
+                        type: 'legacy-image-pyramid',
+                        levels: [{
+                            url: `/tiles/${fileId}/tile_0_0.jpg`,
+                            width: file.width,
+                            height: file.height
+                        }],
+                        tileSize: 256,
+                        width: file.width,
+                        height: file.height,
                         getTileUrl: function(level, x, y) {
-                            // 좌표 검증
-                            if (typeof x !== 'number' || typeof y !== 'number' || x < 0 || y < 0) {
+                            // 기본 검증
+                            if (!Number.isFinite(x) || !Number.isFinite(y)) {
                                 console.warn('❌ 잘못된 좌표:', { level, x, y });
                                 return null;
                             }
 
-                            // 현재 레벨의 타일 크기 계산
-                            const levelScale = Math.pow(2, level);
-                            const levelWidth = Math.ceil(file.width / levelScale);
-                            const levelHeight = Math.ceil(file.height / levelScale);
+                            // 타일 좌표 계산
+                            const tileX = Math.floor(x);
+                            const tileY = Math.floor(y);
 
-                            // 현재 레벨의 타일 수 계산
-                            const numTilesX = Math.ceil(levelWidth / 256);
-                            const numTilesY = Math.ceil(levelHeight / 256);
-
-                            // 타일 인덱스가 범위를 벗어나면 null 반환
-                            if (x >= numTilesX || y >= numTilesY) {
-                                console.warn('❌ 범위 초과:', { level, x, y, numTilesX, numTilesY });
+                            // 음수 좌표 처리
+                            if (tileX < 0 || tileY < 0) {
+                                console.warn('❌ 음수 좌표:', { level, tileX, tileY });
                                 return null;
                             }
 
-                            const url = `/tiles/${fileId}/tile_${x}_${y}.jpg`;
-                            console.log('🔍 타일 요청:', { level, x, y, levelScale, url });
+                            // 타일 URL 생성
+                            const url = `/tiles/${fileId}/tile_${tileX}_${tileY}.jpg`;
+                            console.log('🔍 타일 요청:', { level, tileX, tileY, url });
                             return url;
                         }
                     },
                     showNavigator: true,
                     navigatorPosition: 'BOTTOM_RIGHT',
-                    // 기본 설정
                     maxZoomPixelRatio: 2,
                     defaultZoomLevel: 0,
-                    minZoomLevel: 0,
-                    maxZoomLevel: Math.ceil(Math.log2(Math.max(file.width, file.height) / 256)),
+                    minZoomLevel: 0.1,
+                    maxZoomLevel: 10,
                     // 성능 설정
-                    imageLoaderLimit: 10,
-                    maxImageCacheCount: 400,
-                    minPixelRatio: 0.5,
-                    visibilityRatio: 0.5,
+                    imageLoaderLimit: 5,
+                    maxImageCacheCount: 200,
+                    immediateRender: true,
                     // 제스처 설정
                     gestureSettingsMouse: {
                         scrollToZoom: true,
@@ -325,50 +317,29 @@
                     }
                 });
 
-                // 디버그 이벤트 핸들러
+                // 이벤트 핸들러
                 viewer.addHandler('tile-drawing', function(event) {
                     const tile = event.tile;
                     console.log('🎨 타일 그리기:', {
                         level: tile.level,
                         x: tile.x,
                         y: tile.y,
-                        bounds: tile.bounds.toString(),
                         url: tile.url
                     });
                 });
 
                 viewer.addHandler('tile-loaded', function(event) {
-                    console.log('✅ 타일 로드 완료:', {
-                        url: event.tile.url,
-                        level: event.tile.level
-                    });
+                    console.log('✅ 타일 로드 완료:', event.tile.url);
                 });
 
                 viewer.addHandler('tile-load-failed', function(event) {
-                    console.error('❌ 타일 로드 실패:', {
-                        url: event.tile.url,
-                        message: event.message
-                    });
-                });
-
-                // 뷰포트 이벤트
-                viewer.addHandler('viewport-change', function(event) {
-                    const viewport = viewer.viewport;
-                    console.log('👁️ 뷰포트 변경:', {
-                        zoom: viewport.getZoom(),
-                        bounds: viewport.getBounds().toString()
-                    });
+                    console.error('❌ 타일 로드 실패:', event.tile.url);
                 });
 
                 // 초기화 완료 이벤트
                 viewer.addHandler('open', function() {
                     console.log('🎯 뷰어 초기화 완료');
                     viewer.viewport.goHome();
-                });
-
-                // 에러 핸들링
-                viewer.addHandler('error', function(event) {
-                    console.error('🚨 뷰어 에러:', event.error);
                 });
             } catch (error) {
                 console.error("뷰어 초기화 중 오류:", error);
