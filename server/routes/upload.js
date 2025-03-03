@@ -5,7 +5,6 @@ const fs = require('fs');
 const { processSlide } = require('../utils/imageProcessor');
 const File = require('../models/file');
 const io = require('../utils/io');
-const socketIO = require('socket.io');
 
 const router = express.Router();
 
@@ -71,7 +70,6 @@ router.post('/', upload.single('file'), async (req, res) => {
         const savedDoc = await fileDoc.save();
         console.log('💾 파일 정보 저장됨:', savedDoc.toObject());
 
-        // 응답 전송
         res.json({
             message: '파일 업로드 성공',
             tileSource: fileDoc.fileId,
