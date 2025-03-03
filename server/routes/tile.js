@@ -23,6 +23,8 @@ if (!fs.existsSync(CACHE_DIR)) {
     fs.mkdirSync(CACHE_DIR, { recursive: true });
 }
 
+const TILE_SIZE = 512;  // Python 스크립트와 일치하도록 수정
+
 // 타일 생성 함수
 async function generateTile(inputPath, tileDir, x, y) {
     const tileKey = `${x}_${y}`;

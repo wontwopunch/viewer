@@ -269,12 +269,12 @@
                             width: file.width,
                             height: file.height
                         }],
-                        tileSize: 256,
+                        tileSize: 512,
                         width: file.width,
                         height: file.height,
                         getTileUrl: function(level, x, y) {
                             // 기본 검증
-                            if (!Number.isFinite(x) || !Number.isFinite(y)) {
+                            if (typeof x !== 'number' || typeof y !== 'number' || isNaN(x) || isNaN(y)) {
                                 console.warn('❌ 잘못된 좌표:', { level, x, y });
                                 return null;
                             }
@@ -286,6 +286,14 @@
                             // 음수 좌표 처리
                             if (tileX < 0 || tileY < 0) {
                                 console.warn('❌ 음수 좌표:', { level, tileX, tileY });
+                                return null;
+                            }
+
+                            // 최대 좌표 검증
+                            const maxX = Math.ceil(file.width / 512);
+                            const maxY = Math.ceil(file.height / 512);
+                            if (tileX >= maxX || tileY >= maxY) {
+                                console.warn('❌ 범위 초과 좌표:', { level, tileX, tileY, maxX, maxY });
                                 return null;
                             }
 
