@@ -13,6 +13,8 @@ const tileRouter = require('./routes/tile');
 const authRouter = require('./routes/auth'); 
 const { generateTiles } = require('./utils/imageProcessor');
 const FileModel = require('./models/file');
+const Queue = require('bull');
+const Redis = require('ioredis');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -130,6 +132,31 @@ app.get('/api/debug/files', async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
+});
+
+// Redis 연결
+const redis = new Redis({
+    port: 6379,
+    host: 'localhost'
+});
+
+// 타일 생성 큐
+const tileQueue = new Queue('tile-generation', {
+    redis: {
+        port: 6379,
+        host: 'localhost'
+    },
+    defaultJobOptions: {
+        attempts: 3,
+        removeOnComplete: true
+    }
+});
+
+// 작업 처리기
+tileQueue.process(async (job) => {
+    const { inputPath, x, y } = job.data;
+    await generateTile(inputPath, x, y);
+    job.progress(100);
 });
 
 // 서버 시작

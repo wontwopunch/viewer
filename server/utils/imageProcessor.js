@@ -1,5 +1,8 @@
 const { spawn } = require('child_process');
 const path = require('path');
+const os = require('os');
+const sharp = require('sharp');
+const fs = require('fs');
 
 /**
  * SVS 파일을 타일로 변환
@@ -11,10 +14,14 @@ async function generateTiles(inputPath) {
     return new Promise((resolve, reject) => {
         console.log('📂 처리할 SVS 파일:', inputPath);
         
+        // CPU 코어 수만큼 워커 생성
+        const numWorkers = os.cpus().length;
+        
         const pythonProcess = spawn('python3', [
             path.join(__dirname, 'slide_processor.py'),
             inputPath,
-            'size-only'
+            'parallel',  // 병렬 처리 모드
+            numWorkers.toString()
         ]);
 
         let imageSize = null;
@@ -58,6 +65,19 @@ async function generateTiles(inputPath) {
             }
         });
     });
+}
+
+async function optimizeTile(tilePath) {
+    await sharp(tilePath)
+        .jpeg({
+            quality: 80,
+            progressive: true,
+            force: true,
+            optimizeScans: true
+        })
+        .toFile(tilePath + '.optimized');
+    
+    await fs.rename(tilePath + '.optimized', tilePath);
 }
 
 module.exports = { generateTiles };

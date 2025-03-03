@@ -2,6 +2,14 @@ import sys
 import os
 import openslide
 from PIL import Image
+import multiprocessing
+from concurrent.futures import ProcessPoolExecutor
+import numpy as np
+from functools import partial
+
+TILE_SIZE = 512  # 타일 크기를 512로 증가
+JPEG_QUALITY = 80  # JPEG 품질 조정
+BATCH_SIZE = 16  # 배치 처리 크기
 
 def get_image_size(input_path):
     try:
@@ -19,56 +27,55 @@ def get_image_size(input_path):
         print(f"❌ 이미지 크기 확인 오류: {str(e)}")
         return False
 
-def generate_tile(input_path, output_dir, x, y, tile_size=256):
+def generate_tile_batch(args):
+    input_path, output_dir, batch_coords = args
     try:
-        print(f"타일 생성 시작:")
-        print(f"- 입력 파일: {input_path}")
-        print(f"- 출력 디렉토리: {output_dir}")
-        print(f"- 좌표: ({x}, {y})")
-        
-        if not os.path.exists(input_path):
-            print(f"❌ 입력 파일이 존재하지 않음: {input_path}")
-            return False
-            
-        # SVS 파일 로드
-        slide = openslide.OpenSlide(input_path)
-        
-        # 레벨 0(최고 해상도) 크기
-        width = slide.dimensions[0]
-        height = slide.dimensions[1]
-        print(f"- 이미지 크기: {width}x{height}")
-        
-        # 실제 픽셀 좌표 계산
-        pixel_x = x * tile_size
-        pixel_y = y * tile_size
-        print(f"- 픽셀 좌표: ({pixel_x}, {pixel_y})")
-        
-        # 타일 크기 계산 (이미지 경계에서 조정)
-        current_tile_width = min(tile_size, width - pixel_x)
-        current_tile_height = min(tile_size, height - pixel_y)
-        print(f"- 타일 크기: {current_tile_width}x{current_tile_height}")
-        
-        if current_tile_width <= 0 or current_tile_height <= 0:
-            print("❌ 타일 크기가 유효하지 않음")
-            slide.close()
-            return False
-            
-        # 타일 추출
-        tile = slide.read_region((pixel_x, pixel_y), 0, (current_tile_width, current_tile_height))
-        tile = tile.convert('RGB')
-        
-        # 저장
-        os.makedirs(output_dir, exist_ok=True)
-        tile_path = os.path.join(output_dir, f'tile_{x}_{y}.jpg')
-        tile.save(tile_path, 'JPEG', quality=90)
-        print(f"✅ 타일 생성 완료: {tile_path}")
-        
-        slide.close()
+        # 슬라이드를 한 번만 열기
+        with openslide.OpenSlide(input_path) as slide:
+            for x, y in batch_coords:
+                pixel_x = x * TILE_SIZE
+                pixel_y = y * TILE_SIZE
+                
+                # 메모리 효율적인 타일 읽기
+                tile = slide.read_region((pixel_x, pixel_y), 0, (TILE_SIZE, TILE_SIZE))
+                tile = tile.convert('RGB')
+                
+                # JPEG 최적화
+                tile_path = os.path.join(output_dir, f'tile_{x}_{y}.jpg')
+                tile.save(tile_path, 'JPEG', quality=JPEG_QUALITY, optimize=True)
+                
+                # 진행 상황 보고
+                print(f"TILE_COMPLETE:{x}_{y}")
+                
         return True
-        
     except Exception as e:
-        print(f"❌ 타일 생성 오류: {str(e)}")
+        print(f"❌ 타일 생성 오류 ({x},{y}): {str(e)}")
         return False
+
+def generate_tiles_parallel(input_path, output_dir):
+    # 이미지 크기 확인
+    with openslide.OpenSlide(input_path) as slide:
+        width, height = slide.dimensions
+    
+    # 타일 좌표 계산
+    x_tiles = range(0, width // TILE_SIZE + 1)
+    y_tiles = range(0, height // TILE_SIZE + 1)
+    coords = [(x, y) for x in x_tiles for y in y_tiles]
+    
+    # 배치로 분할
+    batches = [coords[i:i + BATCH_SIZE] for i in range(0, len(coords), BATCH_SIZE)]
+    tasks = [(input_path, output_dir, batch) for batch in batches]
+    
+    # CPU 코어 수 계산 (전체 코어의 75% 사용)
+    num_processes = max(1, int(multiprocessing.cpu_count() * 0.75))
+    
+    print(f"🚀 병렬 처리 시작: {num_processes} 프로세스, {len(batches)} 배치")
+    
+    # 병렬 처리 실행
+    with ProcessPoolExecutor(max_workers=num_processes) as executor:
+        results = list(executor.map(generate_tile_batch, tasks))
+    
+    return all(results)
 
 if __name__ == "__main__":
     print(f"인자 목록: {sys.argv}")
@@ -97,6 +104,6 @@ if __name__ == "__main__":
         output_dir = command  # 두 번째 인자가 output_dir
         x = int(sys.argv[3])
         y = int(sys.argv[4])
-        success = generate_tile(input_path, output_dir, x, y)
+        success = generate_tile_batch((input_path, output_dir, [(x, y)]))
 
     sys.exit(0 if success else 1)

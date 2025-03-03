@@ -3,14 +3,48 @@ const router = express.Router();
 const path = require('path');
 const fs = require('fs').promises;
 const { spawn } = require('child_process');
+const LRUCache = require('lru-cache');
+const sharp = require('sharp');
 
 // 타일 생성 큐와 진행 중인 작업 추적
 const tileQueue = new Map(); // 대기 중인 타일 요청
 const inProgress = new Map(); // 생성 중인 타일
 
+// 메모리 캐시 설정
+const tileCache = new LRUCache({
+    max: 1000,  // 최대 1000개 타일 캐시
+    maxAge: 1000 * 60 * 60, // 1시간
+    updateAgeOnGet: true,
+    length: (n, key) => 1
+});
+
+// 디스크 캐시 설정
+const CACHE_DIR = path.join(__dirname, '../../cache');
+if (!fs.existsSync(CACHE_DIR)) {
+    fs.mkdirSync(CACHE_DIR, { recursive: true });
+}
+
 // 타일 생성 함수
 async function generateTile(inputPath, tileDir, x, y) {
     const tileKey = `${x}_${y}`;
+    
+    // 메모리 캐시 확인
+    const cachedTile = tileCache.get(tileKey);
+    if (cachedTile) {
+        return cachedTile;
+    }
+    
+    // 디스크 캐시 확인
+    const cachePath = path.join(CACHE_DIR, `tile_${tileKey}.jpg`);
+    try {
+        await fs.access(cachePath);
+        const tile = await fs.readFile(cachePath);
+        tileCache.set(tileKey, tile);
+        return tile;
+    } catch (error) {
+        // 캐시 미스, 새로 생성
+    }
+
     const tilePath = path.join(tileDir, `tile_${tileKey}.jpg`);
 
     console.log(`🔍 타일 생성 시작 (${tileKey}):`, {
@@ -63,6 +97,14 @@ async function generateTile(inputPath, tileDir, x, y) {
 }
 
 router.get('/:fileId/tile_:x_:y.jpg', async (req, res) => {
+    const cacheKey = `${req.params.fileId}_${req.params.x}_${req.params.y}`;
+    
+    // 캐시 확인
+    const cachedTile = tileCache.get(cacheKey);
+    if (cachedTile) {
+        return res.sendFile(cachedTile);
+    }
+
     try {
         const { fileId } = req.params;
         const x = parseInt(req.params.x);
@@ -101,6 +143,9 @@ router.get('/:fileId/tile_:x_:y.jpg', async (req, res) => {
         } finally {
             inProgress.delete(tileKey);
         }
+
+        // 생성된 타일 캐싱
+        tileCache.set(cacheKey, tilePath);
 
     } catch (error) {
         console.error('🚨 타일 처리 오류:', error);

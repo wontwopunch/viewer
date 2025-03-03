@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const { processSlide } = require('../utils/imageProcessor');
 const File = require('../models/file');
+const io = require('../utils/io');
 
 const router = express.Router();
 
@@ -48,6 +49,22 @@ router.post('/', upload.single('file'), async (req, res) => {
 
         const savedDoc = await fileDoc.save();
         console.log('💾 파일 정보 저장됨:', savedDoc.toObject());
+
+        // 웹소켓으로 진행 상황 전송
+        const progress = {
+            total: totalTiles,
+            current: 0,
+            percentage: 0
+        };
+        
+        // 진행 상황 업데이트 이벤트 리스너
+        pythonProcess.stdout.on('data', (data) => {
+            if (data.includes('TILE_COMPLETE')) {
+                progress.current++;
+                progress.percentage = (progress.current / progress.total) * 100;
+                io.emit('tileProgress', progress);
+            }
+        });
 
         res.json({
             message: '파일 업로드 성공',
