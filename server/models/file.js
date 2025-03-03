@@ -6,6 +6,10 @@ const fileSchema = new mongoose.Schema({
         required: true,
         unique: true
     },
+    originalName: {
+        type: String,
+        required: true
+    },
     width: {
         type: Number,
         required: true
