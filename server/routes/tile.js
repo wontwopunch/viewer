@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const path = require('path');
-const fs = require('fs').promises;
+const fs = require('fs');
 const { spawn } = require('child_process');
 const { LRUCache } = require('lru-cache');
 const sharp = require('sharp');
+const io = require('../utils/io');
 
 // 타일 생성 큐와 진행 중인 작업 추적
 const tileQueue = new Map(); // 대기 중인 타일 요청
@@ -35,8 +36,8 @@ async function generateTile(inputPath, tileDir, x, y) {
     // 디스크 캐시 확인
     const cachePath = path.join(CACHE_DIR, `tile_${tileKey}.jpg`);
     try {
-        await fs.access(cachePath);
-        const tile = await fs.readFile(cachePath);
+        await fs.promises.access(cachePath);
+        const tile = await fs.promises.readFile(cachePath);
         cache.set(tileKey, tile);
         return tile;
     } catch (error) {
@@ -53,7 +54,7 @@ async function generateTile(inputPath, tileDir, x, y) {
 
     // 이미 생성된 타일이 있는지 확인
     try {
-        await fs.access(tilePath);
+        await fs.promises.access(tilePath);
         console.log(`✅ 기존 타일 발견 (${tileKey}):`, tilePath);
         return tilePath;
     } catch (error) {
@@ -121,7 +122,7 @@ router.get('/:fileId/tile_:x_:y.jpg', async (req, res) => {
         const tileDir = path.join(__dirname, '../../tiles', fileId);
 
         // 디렉토리 생성
-        await fs.mkdir(tileDir, { recursive: true });
+        await fs.promises.mkdir(tileDir, { recursive: true });
 
         // 이미 진행 중인 타일 생성이 있는지 확인
         if (inProgress.has(tileKey)) {
