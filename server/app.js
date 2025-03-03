@@ -137,18 +137,24 @@ app.get('/api/debug/files', async (req, res) => {
 // Redis 연결
 const redis = new Redis({
     port: 6379,
-    host: 'localhost'
+    host: '127.0.0.1',
+    maxRetriesPerRequest: null,
+    retryStrategy: function(times) {
+        return Math.min(times * 50, 2000);
+    }
 });
 
 // 타일 생성 큐
 const tileQueue = new Queue('tile-generation', {
     redis: {
         port: 6379,
-        host: 'localhost'
+        host: '127.0.0.1',
+        maxRetriesPerRequest: null
     },
     defaultJobOptions: {
         attempts: 3,
-        removeOnComplete: true
+        removeOnComplete: true,
+        timeout: 1000 * 60 * 30  // 30분 타임아웃
     }
 });
 
