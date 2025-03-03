@@ -35,13 +35,10 @@ async function generateTile(inputPath, tileDir, x, y) {
     
     // 디스크 캐시 확인
     const cachePath = path.join(CACHE_DIR, `tile_${tileKey}.jpg`);
-    try {
-        await fs.promises.access(cachePath);
+    if (await io.exists(cachePath)) {
         const tile = await fs.promises.readFile(cachePath);
         cache.set(tileKey, tile);
         return tile;
-    } catch (error) {
-        // 캐시 미스, 새로 생성
     }
 
     const tilePath = path.join(tileDir, `tile_${tileKey}.jpg`);
@@ -53,13 +50,12 @@ async function generateTile(inputPath, tileDir, x, y) {
     });
 
     // 이미 생성된 타일이 있는지 확인
-    try {
-        await fs.promises.access(tilePath);
+    if (await io.exists(tilePath)) {
         console.log(`✅ 기존 타일 발견 (${tileKey}):`, tilePath);
         return tilePath;
-    } catch (error) {
-        console.log(`🔄 새 타일 생성 필요 (${tileKey})`);
     }
+
+    console.log(`🔄 새 타일 생성 필요 (${tileKey})`);
 
     return new Promise((resolve, reject) => {
         const pythonProcess = spawn('python3', [
@@ -122,7 +118,7 @@ router.get('/:fileId/tile_:x_:y.jpg', async (req, res) => {
         const tileDir = path.join(__dirname, '../../tiles', fileId);
 
         // 디렉토리 생성
-        await fs.promises.mkdir(tileDir, { recursive: true });
+        await io.ensureDir(tileDir);
 
         // 이미 진행 중인 타일 생성이 있는지 확인
         if (inProgress.has(tileKey)) {
