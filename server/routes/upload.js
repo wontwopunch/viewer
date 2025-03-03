@@ -2,7 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { processSlide } = require('../utils/imageProcessor');
+const { generateTiles } = require('../utils/imageProcessor');  // processSlide를 generateTiles로 변경
 const File = require('../models/file');
 const io = require('../utils/io');
 
@@ -49,8 +49,8 @@ router.post('/', upload.single('file'), async (req, res) => {
 
         console.log('📤 파일 업로드 시작:', req.file.path);
 
-        // 이미지 크기 정보 가져오기
-        const imageInfo = await processSlide(req.file.path, 'size-only');
+        // generateTiles 함수 사용
+        const imageInfo = await generateTiles(req.file.path);
         console.log('📏 이미지 정보:', imageInfo);
 
         if (!imageInfo || !imageInfo.width || !imageInfo.height) {
@@ -92,4 +92,4 @@ router.post('/', upload.single('file'), async (req, res) => {
     }
 });
 
-module.exports = router; 
+module.exports = router;

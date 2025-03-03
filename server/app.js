@@ -11,6 +11,8 @@ const tileRouter = require('./routes/tile');
 const authRouter = require('./routes/auth'); 
 const Queue = require('bull');
 const Redis = require('ioredis');
+const FileModel = require('./models/file');
+const { generateTiles } = require('./utils/imageProcessor');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -109,7 +111,7 @@ const tileQueue = new Queue('tile-generation', {
 // 작업 처리기
 tileQueue.process(async (job) => {
     const { inputPath, x, y } = job.data;
-    await generateTile(inputPath, x, y);
+    await generateTiles(inputPath);
     job.progress(100);
 });
 
