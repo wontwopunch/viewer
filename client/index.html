@@ -120,7 +120,7 @@
 
     <div class="upload-container">
         <h3>📤 파일 업로드</h3>
-        <input type="file" id="fileInput" accept=".svs">
+        <input type="file" id="fileInput" accept=".svs,.ndpi,.tif,.tiff">
         <button onclick="uploadFile()">업로드</button>
         <div id="progress-container">
             <span id="progress-text">0%</span>
@@ -193,7 +193,7 @@
             }
 
             const formData = new FormData();
-            formData.append("svsFile", fileInput);
+            formData.append("file", fileInput);
 
             const progressContainer = document.getElementById("progress-container");
             const progressBar = document.getElementById("progress-bar");
@@ -221,17 +221,15 @@
                         alert("파일 업로드 완료!");
                         progressContainer.style.display = "none";
                         
-                        // 파일 이름만 추출
                         const fileName = response.tileSource;
                         console.log('파일 이름:', fileName);
                         
-                        // 리다이렉트
                         const redirectUrl = `/index.html?file=${encodeURIComponent(fileName)}`;
                         console.log('리다이렉트 URL:', redirectUrl);
                         window.location.href = redirectUrl;
                     } else {
                         console.error("서버 오류:", response);
-                        alert(`⚠️ 업로드 실패: ${response.error || "서버 오류 발생"}`);
+                        alert(`⚠️ 업로드 실패: ${response.error || ""}\n${response.details || "서버 오류 발생"}`);
                     }
                 } catch (error) {
                     console.error("응답 파싱 오류:", error, xhr.responseText);
