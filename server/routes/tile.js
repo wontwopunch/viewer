@@ -3,7 +3,7 @@ const router = express.Router();
 const path = require('path');
 const fs = require('fs').promises;
 const { spawn } = require('child_process');
-const LRUCache = require('lru-cache');
+const { LRUCache } = require('lru-cache');
 const sharp = require('sharp');
 
 // 타일 생성 큐와 진행 중인 작업 추적
@@ -11,11 +11,9 @@ const tileQueue = new Map(); // 대기 중인 타일 요청
 const inProgress = new Map(); // 생성 중인 타일
 
 // 메모리 캐시 설정
-const tileCache = new LRUCache({
-    max: 1000,  // 최대 1000개 타일 캐시
-    maxAge: 1000 * 60 * 60, // 1시간
-    updateAgeOnGet: true,
-    length: (n, key) => 1
+const cache = new LRUCache({
+    max: 500,
+    ttl: 1000 * 60 * 60
 });
 
 // 디스크 캐시 설정
@@ -29,7 +27,7 @@ async function generateTile(inputPath, tileDir, x, y) {
     const tileKey = `${x}_${y}`;
     
     // 메모리 캐시 확인
-    const cachedTile = tileCache.get(tileKey);
+    const cachedTile = cache.get(tileKey);
     if (cachedTile) {
         return cachedTile;
     }
@@ -39,7 +37,7 @@ async function generateTile(inputPath, tileDir, x, y) {
     try {
         await fs.access(cachePath);
         const tile = await fs.readFile(cachePath);
-        tileCache.set(tileKey, tile);
+        cache.set(tileKey, tile);
         return tile;
     } catch (error) {
         // 캐시 미스, 새로 생성
@@ -100,7 +98,7 @@ router.get('/:fileId/tile_:x_:y.jpg', async (req, res) => {
     const cacheKey = `${req.params.fileId}_${req.params.x}_${req.params.y}`;
     
     // 캐시 확인
-    const cachedTile = tileCache.get(cacheKey);
+    const cachedTile = cache.get(cacheKey);
     if (cachedTile) {
         return res.sendFile(cachedTile);
     }
@@ -145,7 +143,7 @@ router.get('/:fileId/tile_:x_:y.jpg', async (req, res) => {
         }
 
         // 생성된 타일 캐싱
-        tileCache.set(cacheKey, tilePath);
+        cache.set(cacheKey, tilePath);
 
     } catch (error) {
         console.error('🚨 타일 처리 오류:', error);
