@@ -263,66 +263,35 @@
                     debugMode: true,
                     showDebugInfo: true,
                     tileSources: {
-                        type: 'legacy-image-pyramid',
-                        levels: [
-                            {
-                                url: `/tiles/${fileId}/tile_0_0.jpg`,
-                                width: file.width,
-                                height: file.height,
-                                tileSize: 512,
-                                getTileUrl: function(level, x, y) {
-                                    // 기본 검증
-                                    if (typeof x !== 'number' || typeof y !== 'number' || isNaN(x) || isNaN(y)) {
-                                        console.warn('❌ 잘못된 좌표:', { level, x, y });
-                                        return null;
-                                    }
+                        height: file.height,
+                        width:  file.width,
+                        tileSize: 512,
+                        minLevel: 0,
+                        maxLevel: Math.ceil(Math.log2(Math.max(file.width, file.height) / 512)),
+                        getTileUrl: function(level, x, y) {
+                            // 타일 좌표 계산
+                            const scale = Math.pow(2, level);
+                            const tileX = Math.floor(x * scale);
+                            const tileY = Math.floor(y * scale);
 
-                                    // 타일 좌표 계산
-                                    const tileX = Math.floor(x);
-                                    const tileY = Math.floor(y);
-
-                                    // 음수 좌표 처리
-                                    if (tileX < 0 || tileY < 0) {
-                                        console.warn('❌ 음수 좌표:', { level, tileX, tileY });
-                                        return null;
-                                    }
-
-                                    // 최대 좌표 검증
-                                    const maxX = Math.ceil(file.width / 512);
-                                    const maxY = Math.ceil(file.height / 512);
-                                    if (tileX >= maxX || tileY >= maxY) {
-                                        console.warn('❌ 범위 초과 좌표:', { level, tileX, tileY, maxX, maxY });
-                                        return null;
-                                    }
-
-                                    // 타일 URL 생성
-                                    const url = `/tiles/${fileId}/tile_${tileX}_${tileY}.jpg`;
-                                    console.log('🔍 타일 요청:', { level, tileX, tileY, url });
-                                    return url;
-                                }
+                            // 음수 좌표 처리
+                            if (tileX < 0 || tileY < 0) {
+                                console.warn('❌ 음수 좌표:', { level, tileX, tileY });
+                                return null;
                             }
-                        ],
-                        width: file.width,
-                        height: file.height
+
+                            // 타일 URL 생성
+                            const url = `/tiles/${fileId}/tile_${level}_${tileX}_${tileY}.jpg`;
+                            console.log('🔍 타일 요청:', { level, tileX, tileY, url });
+                            return url;
+                        }
                     },
                     showNavigator: true,
                     navigatorPosition: 'BOTTOM_RIGHT',
                     maxZoomPixelRatio: 2,
                     defaultZoomLevel: 0,
                     minZoomLevel: 0.1,
-                    maxZoomLevel: 10,
-                    // 성능 설정
-                    imageLoaderLimit: 5,
-                    maxImageCacheCount: 200,
-                    immediateRender: true,
-                    // 제스처 설정
-                    gestureSettingsMouse: {
-                        scrollToZoom: true,
-                        clickToZoom: false,
-                        dblClickToZoom: true,
-                        pinchToZoom: true,
-                        flickEnabled: true
-                    }
+                    maxZoomLevel: 10
                 });
 
                 // 이벤트 핸들러
