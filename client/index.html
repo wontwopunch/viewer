@@ -264,44 +264,46 @@
                     showDebugInfo: true,
                     tileSources: {
                         type: 'legacy-image-pyramid',
-                        levels: [{
-                            url: `/tiles/${fileId}/tile_0_0.jpg`,
-                            width: file.width,
-                            height: file.height
-                        }],
-                        tileSize: 512,
+                        levels: [
+                            {
+                                url: `/tiles/${fileId}/tile_0_0.jpg`,
+                                width: file.width,
+                                height: file.height,
+                                tileSize: 512,
+                                getTileUrl: function(level, x, y) {
+                                    // 기본 검증
+                                    if (typeof x !== 'number' || typeof y !== 'number' || isNaN(x) || isNaN(y)) {
+                                        console.warn('❌ 잘못된 좌표:', { level, x, y });
+                                        return null;
+                                    }
+
+                                    // 타일 좌표 계산
+                                    const tileX = Math.floor(x);
+                                    const tileY = Math.floor(y);
+
+                                    // 음수 좌표 처리
+                                    if (tileX < 0 || tileY < 0) {
+                                        console.warn('❌ 음수 좌표:', { level, tileX, tileY });
+                                        return null;
+                                    }
+
+                                    // 최대 좌표 검증
+                                    const maxX = Math.ceil(file.width / 512);
+                                    const maxY = Math.ceil(file.height / 512);
+                                    if (tileX >= maxX || tileY >= maxY) {
+                                        console.warn('❌ 범위 초과 좌표:', { level, tileX, tileY, maxX, maxY });
+                                        return null;
+                                    }
+
+                                    // 타일 URL 생성
+                                    const url = `/tiles/${fileId}/tile_${tileX}_${tileY}.jpg`;
+                                    console.log('🔍 타일 요청:', { level, tileX, tileY, url });
+                                    return url;
+                                }
+                            }
+                        ],
                         width: file.width,
-                        height: file.height,
-                        getTileUrl: function(level, x, y) {
-                            // 기본 검증
-                            if (typeof x !== 'number' || typeof y !== 'number' || isNaN(x) || isNaN(y)) {
-                                console.warn('❌ 잘못된 좌표:', { level, x, y });
-                                return null;
-                            }
-
-                            // 타일 좌표 계산
-                            const tileX = Math.floor(x);
-                            const tileY = Math.floor(y);
-
-                            // 음수 좌표 처리
-                            if (tileX < 0 || tileY < 0) {
-                                console.warn('❌ 음수 좌표:', { level, tileX, tileY });
-                                return null;
-                            }
-
-                            // 최대 좌표 검증
-                            const maxX = Math.ceil(file.width / 512);
-                            const maxY = Math.ceil(file.height / 512);
-                            if (tileX >= maxX || tileY >= maxY) {
-                                console.warn('❌ 범위 초과 좌표:', { level, tileX, tileY, maxX, maxY });
-                                return null;
-                            }
-
-                            // 타일 URL 생성
-                            const url = `/tiles/${fileId}/tile_${tileX}_${tileY}.jpg`;
-                            console.log('🔍 타일 요청:', { level, tileX, tileY, url });
-                            return url;
-                        }
+                        height: file.height
                     },
                     showNavigator: true,
                     navigatorPosition: 'BOTTOM_RIGHT',
@@ -334,12 +336,12 @@
                     });
                 });
 
-                viewer.addHandler('tile-loaded', function(event) {
-                    console.log('✅ 타일 로드 완료:', event.tile.url);
+                viewer.addHandler('tile-load-failed', function(event) {
+                    console.error('❌ 타일 로드 실패:', event);
                 });
 
-                viewer.addHandler('tile-load-failed', function(event) {
-                    console.error('❌ 타일 로드 실패:', event.tile.url);
+                viewer.addHandler('tile-loaded', function(event) {
+                    console.log('✅ 타일 로드 성공:', event);
                 });
 
                 // 초기화 완료 이벤트
