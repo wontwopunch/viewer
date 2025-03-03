@@ -80,11 +80,11 @@ def generate_tiles_parallel(input_path, output_dir):
 if __name__ == "__main__":
     print(f"인자 목록: {sys.argv}")
     
-    # 첫 번째 인자는 항상 input_path
     if len(sys.argv) < 3:
         print("Usage:")
         print("  이미지 크기 확인: python slide_processor.py <input_path> size-only")
-        print("  타일 생성: python slide_processor.py <input_path> <output_dir> <x> <y>")
+        print("  병렬 처리: python slide_processor.py <input_path> parallel <num_workers>")
+        print("  단일 타일: python slide_processor.py <input_path> <output_dir> <x> <y>")
         sys.exit(1)
 
     input_path = sys.argv[1]
@@ -95,8 +95,13 @@ if __name__ == "__main__":
     if command == 'size-only':
         # 이미지 크기 확인 모드
         success = get_image_size(input_path)
+    elif command == 'parallel':
+        # 병렬 처리 모드
+        output_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(input_path))), 'tiles')
+        os.makedirs(output_dir, exist_ok=True)
+        success = generate_tiles_parallel(input_path, output_dir)
     else:
-        # 타일 생성 모드
+        # 단일 타일 생성 모드
         if len(sys.argv) != 5:
             print("타일 생성 사용법: python slide_processor.py <input_path> <output_dir> <x> <y>")
             sys.exit(1)

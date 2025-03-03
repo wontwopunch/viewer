@@ -20,8 +20,7 @@ async function generateTiles(inputPath) {
         const pythonProcess = spawn('python3', [
             path.join(__dirname, 'slide_processor.py'),
             inputPath,
-            'parallel',  // 병렬 처리 모드
-            numWorkers.toString()
+            'size-only'  // 먼저 크기만 확인
         ]);
 
         let imageSize = null;
