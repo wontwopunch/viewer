@@ -1,2 +1,33 @@
 node_modules/
 venv/
+
+# Project specific
+data/
+tile_cache/
+uploads/
+
+# Environment
+.env
+.env.local
+.env.development
+.env.production
+
+# IDE
+.vscode/
+.idea/
+
+# Production
+dist/
+build/
+.env.production
+.env.staging
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed

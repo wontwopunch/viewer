@@ -1,0 +1,9 @@
+flask==2.0.1
+flask-cors==3.0.10
+flask-session==0.4.0
+openslide-python==1.1.2
+pillow==8.3.1
+cachetools==4.2.2
+gunicorn==20.1.0
+werkzeug==2.0.1
+redis==4.0.2  # 세션 저장소로 사용 가능 
