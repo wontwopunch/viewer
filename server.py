@@ -1,4 +1,4 @@
-from flask import Flask, send_file, jsonify, request, send_from_directory, make_response
+from flask import Flask, send_file, jsonify, request, send_from_directory, make_response, session
 import openslide
 from flask_cors import CORS
 import os
@@ -47,6 +47,10 @@ tile_cache = LRUCache(maxsize=int(os.environ.get('TILE_CACHE_SIZE', 10000)))
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=1)
 Session(app)
+
+# secret key 설정 추가
+with open('secret_key.txt', 'r') as f:
+    app.secret_key = f.read().strip()
 
 # 로그인 상태 확인 데코레이터
 def login_required(f):
@@ -569,6 +573,7 @@ def get_public_tile(filename, level, x, y):
 def login():
     data = request.json
     if data.get('id') == ADMIN_ID and data.get('password') == ADMIN_PASSWORD:
+        session['logged_in'] = True  # 세션에 로그인 상태 저장
         return jsonify({'success': True})
     return jsonify({'success': False}), 401
 
