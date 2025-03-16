@@ -473,33 +473,46 @@
         // 파일 업로드 처리
         async function uploadFile(event) {
             event.preventDefault();
-            const fileInput = document.getElementById('fileInput');
-            const file = fileInput.files[0];
+            console.log("Upload function called");
             
+            const fileInput = document.getElementById('fileInput');
+            console.log("File input:", fileInput);
+            console.log("Files:", fileInput.files);
+            
+            const file = fileInput.files[0];
             if (!file) {
                 alert('파일을 선택해주세요.');
                 return;
             }
-
+            
+            console.log("Selected file:", file);
+            console.log("File name:", file.name);
+            console.log("File type:", file.type);
+            console.log("File size:", file.size);
+            
             const formData = new FormData();
             formData.append('file', file);
-
+            
             try {
+                console.log("Sending request...");
                 const response = await fetch('/upload', {
                     method: 'POST',
                     body: formData
                 });
-
+                
+                console.log("Upload response:", response);
+                const responseData = await response.json();
+                console.log("Response data:", responseData);
+                
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    throw new Error(responseData.error || `HTTP error! status: ${response.status}`);
                 }
-
-                const data = await response.json();
-                alert(data.message);
+                
+                alert(responseData.message);
                 displayFiles();  // 파일 목록 새로고침
             } catch (error) {
                 console.error('Upload error:', error);
-                alert('파일 업로드 중 오류가 발생했습니다.');
+                alert('파일 업로드 중 오류가 발생했습니다: ' + error.message);
             }
         }
 

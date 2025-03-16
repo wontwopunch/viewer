@@ -142,40 +142,48 @@ def index():
     return send_from_directory(STATIC_FOLDER, 'index.html')
 
 @app.route('/<path:filename>')
-@app.route('/static/<path:filename>')
 def serve_static(filename):
-    if request.path.startswith('/static/'):
-        return send_from_directory('static', filename)
-    return send_from_directory(STATIC_FOLDER, filename)
+    # static 폴더 확인
+    static_path = os.path.join(BASE_DIR, 'static')
+    if os.path.exists(os.path.join(static_path, filename)):
+        return send_from_directory(static_path, filename)
+    
+    # 루트 폴더 확인
+    if os.path.exists(os.path.join(BASE_DIR, filename)):
+        return send_from_directory(BASE_DIR, filename)
+    
+    return jsonify({'error': 'File not found'}), 404
 
 def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() == 'svs'
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ['svs', 'ndpi']
 
 @app.route('/upload', methods=['POST'])
+@login_required
 def upload_file():
     try:
+        logger.info("Upload request received")
         if 'file' not in request.files:
+            logger.error("No file part in request")
             return jsonify({'error': '파일이 없습니다'}), 400
-        
+            
         file = request.files['file']
         if file.filename == '':
+            logger.error("No selected file")
             return jsonify({'error': '선택된 파일이 없습니다'}), 400
-        
+            
         if file and allowed_file(file.filename):
-            # 안전한 파일명 생성
             filename = secure_filename(file.filename)
-            
-            # 파일 저장 전 바이러스 검사 등 추가 가능
+            logger.info(f"Saving file: {filename}")
             file_path = os.path.join(UPLOAD_FOLDER, filename)
-            
-            # 파일 저장
             file.save(file_path)
-            logger.info(f'File uploaded successfully: {filename}')
-            return jsonify({'message': '파일이 업로드되었습니다', 'filename': filename})
-        
-        return jsonify({'error': 'SVS 파일만 업로드 가능합니다'}), 400
+            logger.info(f"File saved successfully: {file_path}")
+            return jsonify({'message': '파일이 업로드되었습니다'})
+        else:
+            logger.error("Invalid file type")
+            return jsonify({'error': 'SVS 또는 NDPI 파일만 업로드 가능합니다'}), 400
+            
     except Exception as e:
-        logger.error(f'Upload error: {str(e)}', exc_info=True)
+        logger.error(f"Upload error: {str(e)}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 def get_tile_cache_path(filename, level, x, y):
