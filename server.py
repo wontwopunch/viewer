@@ -114,7 +114,7 @@ def add_security_headers(response):
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 DATA_FOLDER = os.path.join(BASE_DIR, 'data')
-STATIC_FOLDER = BASE_DIR
+STATIC_FOLDER = os.path.join(BASE_DIR, 'static')
 PUBLIC_FILES_PATH = os.path.join(BASE_DIR, 'public_files.json')
 
 if not os.path.exists(UPLOAD_FOLDER):
@@ -143,15 +143,8 @@ def index():
 
 @app.route('/<path:filename>')
 def serve_static(filename):
-    # static 폴더 확인
-    static_path = os.path.join(BASE_DIR, 'static')
-    if os.path.exists(os.path.join(static_path, filename)):
-        return send_from_directory(static_path, filename)
-    
-    # 루트 폴더 확인
-    if os.path.exists(os.path.join(BASE_DIR, filename)):
-        return send_from_directory(BASE_DIR, filename)
-    
+    if os.path.exists(os.path.join(STATIC_FOLDER, filename)):
+        return send_from_directory(STATIC_FOLDER, filename)
     return jsonify({'error': 'File not found'}), 404
 
 def allowed_file(filename):
