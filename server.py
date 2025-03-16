@@ -13,23 +13,21 @@ import logging  # 로깅 추가
 from werkzeug.utils import secure_filename
 from flask_session import Session
 from datetime import timedelta
+import sys
 
 # 로깅 설정 수정
 logging.basicConfig(
-    filename='app.log',
+    filename='/root/viewer/app.log',  # 절대 경로 사용
     level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
-# 파일 핸들러 추가
-file_handler = logging.FileHandler('app.log')
-file_handler.setLevel(logging.DEBUG)
-logger.addHandler(file_handler)
-
-# 콘솔 핸들러 추가
-console_handler = logging.StreamHandler()
+# 콘솔 출력 추가
+console_handler = logging.StreamHandler(sys.stdout)
 console_handler.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
 app = Flask(__name__)
@@ -506,8 +504,26 @@ if not os.path.exists(PUBLIC_FILES_PATH):
     print(f"Creating initial public_files.json at: {PUBLIC_FILES_PATH}")
     save_public_files({})
 
-public_files = load_public_files()
-print(f"Initial public files state: {public_files}")
+try:
+    if os.path.exists(PUBLIC_FILES_PATH):
+        with open(PUBLIC_FILES_PATH, 'r') as f:
+            public_files = json.load(f)
+    else:
+        public_files = {}
+        with open(PUBLIC_FILES_PATH, 'w') as f:
+            json.dump(public_files, f)
+except Exception as e:
+    logger.error(f"Error loading public_files: {str(e)}")
+    public_files = {}
+
+def save_public_files():
+    try:
+        with open(PUBLIC_FILES_PATH, 'w') as f:
+            json.dump(public_files, f)
+        return True
+    except Exception as e:
+        logger.error(f"Error saving public_files: {str(e)}")
+        return False
 
 @app.route('/public/<path:filename>/info')
 def get_public_slide_info(filename):
