@@ -366,8 +366,9 @@
 
             // OpenSeadragon 뷰어 초기화
             const viewer = OpenSeadragon({
-                id: "viewer",
-                prefixUrl: "https://openseadragon.github.io/openseadragon/images/",
+                id: "openseadragon",
+                prefixUrl: "https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.1.0/images/",
+                crossOriginPolicy: 'Anonymous',
                 animationTime: 0.5,
                 blendTime: 0.1,
                 constrainDuringPan: true,
@@ -403,8 +404,7 @@
                 imageLoaderLimit: 10,
                 minZoomImageRatio: 0.8,
                 preload: true,
-                debugMode: false,
-                crossOriginPolicy: 'anonymous'
+                debugMode: false
             });
 
             fetch(`${baseUrl}/info`)

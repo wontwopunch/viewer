@@ -17,7 +17,7 @@ from datetime import timedelta
 # 로깅 설정
 logging.basicConfig(
     filename='app.log',
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
@@ -25,8 +25,12 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 # 배포 환경에서는 CORS 설정을 제한적으로
 CORS(app, resources={
-    r"/slide/*": {"origins": ["http://188.166.255.196", "https://188.166.255.196"]},
-    r"/public/*": {"origins": "*"}  # 공개 접근 허용
+    r"/*": {
+        "origins": ["http://188.166.255.196", "https://188.166.255.196"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    },
+    r"/public/*": {"origins": "*"}
 })
 
 # 환경 변수 설정
@@ -80,12 +84,16 @@ def add_security_headers(response):
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['X-Frame-Options'] = 'SAMEORIGIN'
     response.headers['X-XSS-Protection'] = '1; mode=block'
-    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
     
-    # 추가 보안 헤더
-    response.headers['Content-Security-Policy'] = "default-src 'self'; img-src 'self' data:; script-src 'self' 'unsafe-inline' cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' cdnjs.cloudflare.com"
-    response.headers['Referrer-Policy'] = 'same-origin'
-    response.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
+    # CSP 헤더 수정
+    response.headers['Content-Security-Policy'] = (
+        "default-src 'self'; "
+        "img-src 'self' data: blob: http://188.166.255.196; "  # blob: 추가
+        "script-src 'self' 'unsafe-inline' cdnjs.cloudflare.com; "
+        "style-src 'self' 'unsafe-inline' cdnjs.cloudflare.com; "
+        "connect-src 'self' http://188.166.255.196; "  # connect-src 추가
+        "worker-src blob: 'self'"  # worker-src 추가
+    )
     
     return response
 
@@ -302,37 +310,38 @@ def get_files():
 @app.route('/files/<filename>', methods=['DELETE'])
 def delete_file(filename):
     try:
+        # 파일 경로 로깅
+        logger.info(f"Attempting to delete file: {filename}")
+        logger.info(f"Full path: {os.path.join(UPLOAD_FOLDER, filename)}")
+        
         file_path = os.path.join(UPLOAD_FOLDER, filename)
         if os.path.exists(file_path):
+            # 파일 삭제
             os.remove(file_path)
+            logger.info(f"File removed: {file_path}")
             
-            basename = os.path.splitext(filename)[0]
-            cache_dir = os.path.join(TILE_CACHE_DIR, basename)
-            if os.path.exists(cache_dir):
-                import shutil
-                shutil.rmtree(cache_dir)
+            # 관련 데이터 파일 삭제
+            data_path = get_data_path(filename)
+            if os.path.exists(data_path):
+                os.remove(data_path)
+                logger.info(f"Data file removed: {data_path}")
             
+            # 캐시에서 제거
             slide_path = os.path.join(UPLOAD_FOLDER, filename)
             if slide_path in slide_cache:
                 del slide_cache[slide_path]
             
-            prefix = f"{slide_path}_"
-            keys_to_delete = [k for k in tile_cache.keys() if k.startswith(prefix)]
-            for key in keys_to_delete:
-                del tile_cache[key]
-            
-            data_path = get_data_path(filename)
-            if os.path.exists(data_path):
-                os.remove(data_path)
-            
+            # public_files에서 제거
             if filename in public_files:
                 del public_files[filename]
                 save_public_files()
-                
+            
             return jsonify({'message': '파일이 삭제되었습니다'})
-        return jsonify({'error': '파일을 찾을 수 없습니다'}), 404
+        else:
+            logger.error(f"File not found: {file_path}")
+            return jsonify({'error': '파일을 찾을 수 없습니다'}), 404
     except Exception as e:
-        print(f"Error deleting file: {str(e)}")
+        logger.error(f"Error deleting file: {str(e)}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 @app.route('/files/<filename>/rename', methods=['POST'])
