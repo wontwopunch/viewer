@@ -14,13 +14,23 @@ from werkzeug.utils import secure_filename
 from flask_session import Session
 from datetime import timedelta
 
-# 로깅 설정
+# 로깅 설정 수정
 logging.basicConfig(
     filename='app.log',
     level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# 파일 핸들러 추가
+file_handler = logging.FileHandler('app.log')
+file_handler.setLevel(logging.DEBUG)
+logger.addHandler(file_handler)
+
+# 콘솔 핸들러 추가
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.DEBUG)
+logger.addHandler(console_handler)
 
 app = Flask(__name__)
 # 배포 환경에서는 CORS 설정을 제한적으로
