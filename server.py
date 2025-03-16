@@ -60,9 +60,15 @@ app.config['SESSION_TYPE'] = 'filesystem'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=1)
 Session(app)
 
-# secret key 설정 추가
-with open('secret_key.txt', 'r') as f:
-    app.secret_key = f.read().strip()
+# secret key 설정 수정
+try:
+    with open('/root/viewer/secret_key.txt', 'r') as f:
+        app.secret_key = f.read().strip()
+except Exception as e:
+    logger.error(f"Error loading secret key: {str(e)}")
+    # 임시 secret key 생성
+    import secrets
+    app.secret_key = secrets.token_hex(16)
 
 # 로그인 상태 확인 데코레이터
 def login_required(f):
