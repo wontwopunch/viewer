@@ -18,7 +18,7 @@ errorlog = '/root/viewer/error.log'
 loglevel = 'debug'
 
 # 바인딩
-bind = '0.0.0.0:8000'
+bind = '0.0.0.0:8001'
 
 # 프로세스 관리
 pidfile = '/tmp/viewer.pid'

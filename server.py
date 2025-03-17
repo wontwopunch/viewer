@@ -44,7 +44,7 @@ app.static_url_path = ''
 # 배포 환경에서는 CORS 설정을 제한적으로
 CORS(app, resources={
     r"/*": {
-        "origins": ["http://188.166.255.196", "https://188.166.255.196"],
+        "origins": ["http://188.166.255.196:8001", "https://188.166.255.196:8001"],  # 포트 변경
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"]
     },
