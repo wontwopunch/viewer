@@ -30,6 +30,9 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
+# 맨 위에 BASE_DIR 정의
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 app = Flask(__name__, 
     static_url_path='',  # 빈 문자열로 설정
     static_folder=os.path.join(BASE_DIR, 'static')  # 절대 경로 사용
