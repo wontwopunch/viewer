@@ -21,8 +21,4 @@ bind = '0.0.0.0:8000'
 # 프로세스 관리
 pidfile = '/tmp/viewer.pid'
 daemon = False
-preload_app = True
-
-# 프로세스 관리
-pidfile = '/tmp/viewer.pid'
-daemon = False 
+preload_app = True 
