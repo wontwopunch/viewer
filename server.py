@@ -15,6 +15,7 @@ from flask_session import Session
 from datetime import timedelta
 import sys
 import atexit
+import signal
 
 # 로깅 설정 수정
 logging.basicConfig(
@@ -640,14 +641,34 @@ def login():
         return jsonify({'success': True})
     return jsonify({'success': False}), 401
 
-# 서버 종료 시 정리
+def signal_handler(signum, frame):
+    """Signal handler for graceful shutdown"""
+    logger.info(f"Received signal {signum}")
+    cleanup()
+    sys.exit(0)
+
+# Register signal handlers
+signal.signal(signal.SIGTERM, signal_handler)
+signal.signal(signal.SIGINT, signal_handler)
+
 @atexit.register
 def cleanup():
+    """Cleanup function to be called on exit"""
     try:
+        # Close all slide objects
+        for slide in slide_cache.values():
+            try:
+                slide.close()
+            except Exception as e:
+                logger.error(f"Error closing slide: {str(e)}")
+
+        # Remove PID file
         if os.path.exists('/tmp/viewer.pid'):
             os.remove('/tmp/viewer.pid')
+            
+        logger.info("Cleanup completed successfully")
     except Exception as e:
-        logger.error(f"Error cleaning up: {str(e)}")
+        logger.error(f"Error during cleanup: {str(e)}")
 
 if __name__ == '__main__':
     # 프로덕션 환경에서는 gunicorn이나 uwsgi 사용
