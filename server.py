@@ -31,8 +31,8 @@ console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
 app = Flask(__name__, 
-    static_url_path='',
-    static_folder='static'
+    static_url_path='',  # 빈 문자열로 설정
+    static_folder=os.path.join(BASE_DIR, 'static')  # 절대 경로 사용
 )
 # 배포 환경에서는 CORS 설정을 제한적으로
 CORS(app, resources={
@@ -142,12 +142,14 @@ def save_file_data(filename, data):
 
 @app.route('/')
 def index():
-    return send_from_directory(STATIC_FOLDER, 'index.html')
+    return app.send_static_file('index.html')
 
 @app.route('/<path:filename>')
 def serve_static(filename):
     try:
-        return send_from_directory(STATIC_FOLDER, filename)
+        if os.path.exists(os.path.join(app.static_folder, filename)):
+            return app.send_static_file(filename)
+        return jsonify({'error': 'File not found'}), 404
     except Exception as e:
         logger.error(f"Error serving static file {filename}: {str(e)}")
         return jsonify({'error': 'File not found'}), 404
