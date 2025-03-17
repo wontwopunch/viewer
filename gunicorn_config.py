@@ -4,7 +4,7 @@ import os
 # 워커 설정
 workers = 3
 threads = 2
-worker_class = 'gthread'
+worker_class = 'sync'
 
 # 타임아웃 설정
 timeout = 120
@@ -21,4 +21,9 @@ bind = '0.0.0.0:8000'
 # 프로세스 관리
 pidfile = '/tmp/viewer.pid'
 daemon = False
-preload_app = True 
+preload_app = True
+
+# 추가 설정
+max_requests = 1000
+max_requests_jitter = 50
+graceful_timeout = 10 

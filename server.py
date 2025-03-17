@@ -14,6 +14,7 @@ from werkzeug.utils import secure_filename
 from flask_session import Session
 from datetime import timedelta
 import sys
+import atexit
 
 # 로깅 설정 수정
 logging.basicConfig(
@@ -638,6 +639,15 @@ def login():
         session['logged_in'] = True  # 세션에 로그인 상태 저장
         return jsonify({'success': True})
     return jsonify({'success': False}), 401
+
+# 서버 종료 시 정리
+@atexit.register
+def cleanup():
+    try:
+        if os.path.exists('/tmp/viewer.pid'):
+            os.remove('/tmp/viewer.pid')
+    except Exception as e:
+        logger.error(f"Error cleaning up: {str(e)}")
 
 if __name__ == '__main__':
     # 프로덕션 환경에서는 gunicorn이나 uwsgi 사용
