@@ -10,10 +10,10 @@ worker_class = 'gthread'
 timeout = 120
 keepalive = 5
 
-# 로깅 설정 (절대 경로 사용)
+# 로깅 설정
 accesslog = '/root/viewer/access.log'
 errorlog = '/root/viewer/error.log'
-loglevel = 'debug'  # 디버깅을 위해 debug로 변경
+loglevel = 'debug'  # 디버깅을 위해 임시로 debug로 설정
 
 # 바인딩
 bind = '0.0.0.0:8000' 

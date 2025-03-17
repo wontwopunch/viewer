@@ -30,7 +30,10 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
-app = Flask(__name__)
+app = Flask(__name__, 
+    static_url_path='',
+    static_folder='static'
+)
 # 배포 환경에서는 CORS 설정을 제한적으로
 CORS(app, resources={
     r"/*": {
@@ -143,9 +146,11 @@ def index():
 
 @app.route('/<path:filename>')
 def serve_static(filename):
-    if os.path.exists(os.path.join(STATIC_FOLDER, filename)):
+    try:
         return send_from_directory(STATIC_FOLDER, filename)
-    return jsonify({'error': 'File not found'}), 404
+    except Exception as e:
+        logger.error(f"Error serving static file {filename}: {str(e)}")
+        return jsonify({'error': 'File not found'}), 404
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ['svs', 'ndpi']
