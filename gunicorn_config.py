@@ -2,7 +2,7 @@ import multiprocessing
 import os
 
 # 워커 설정
-workers = multiprocessing.cpu_count() * 2 + 1
+workers = 3
 threads = 2
 worker_class = 'gthread'
 
@@ -13,7 +13,11 @@ keepalive = 5
 # 로깅 설정
 accesslog = '/root/viewer/access.log'
 errorlog = '/root/viewer/error.log'
-loglevel = 'debug'  # 디버깅을 위해 임시로 debug로 설정
+loglevel = 'debug'
 
 # 바인딩
-bind = '0.0.0.0:8000' 
+bind = '0.0.0.0:8000'
+
+# 프로세스 관리
+pidfile = '/tmp/viewer.pid'
+daemon = False 
